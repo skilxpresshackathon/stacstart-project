@@ -1,10 +1,7 @@
+import { DiscoverPage } from './pages/DiscoverPage'
+
 function App() {
-  return (
-    <main>
-      <h1>Discover</h1>
-      <p>Find local service providers and book their services.</p>
-    </main>
-  )
+  return <DiscoverPage />
 }
 
 export default App
