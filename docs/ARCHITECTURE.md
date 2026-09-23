@@ -1,18 +1,16 @@
- StacStart MVP — Technical Architecture
+DISCOVER — MVP TECHNICAL ARCHITECTURE
 
- 1. Architecture Goal
+1. Architecture Goal
 
-The MVP should use a simple architecture that is easy for the team to build, understand, test and deploy during Build Week.
+The MVP should use a simple architecture that the team can build, understand, test and deploy during Build Week.
 
-The system should avoid unnecessary complexity.
+The architecture should support the core Discover marketplace and booking workflow without unnecessary complexity.
 
----
-
- 2. High-Level Architecture
+2. High-Level Architecture
 
 User
   ↓
-React Web App
+React + TypeScript Web App
   ↓
 Supabase
   ├── Authentication
@@ -22,121 +20,120 @@ Supabase
    Provider Videos
 
 
- 3. Frontend
+3. Frontend
 
 The frontend is responsible for:
 
-- Marketplace / Discover
+- Discover marketplace
 - Search and filtering
 - Provider profiles
-- Video display
-- Authentication screens
-- Customer request screens
-- Booking/request management
-- Provider Hub
-- Chat interface
+- Provider videos
+- Authentication
+- Customer bookings
+- Provider dashboard
+- Booking management
+- Comments
 - Reviews
-- Account screens
+- Account settings
+- Provider verification
+- Admin verification interface
 
 The frontend communicates with Supabase for authentication, database operations and storage.
 
----
+4. Authentication
 
- 4. Authentication
+Supabase Authentication manages registered users.
 
-Supabase Authentication will manage user authentication.
-
-Users can register and sign in.
-
-Each authenticated user has a profile containing their basic account information and role.
-
-Possible roles:
+The main user roles are:
 
 - Customer
 - Provider
 - Admin
 
-Guest users can browse the marketplace without authentication.
+Guests can browse Discover without signing in.
 
-Authentication is required when a guest attempts to perform an action that requires an account, such as submitting a service request.
+Authentication is required for account-based actions such as submitting a booking.
 
----
+Customers can later convert their account to a provider account through the provider setup flow.
 
- 5. Database
+5. User Profiles
 
-Supabase PostgreSQL will store application data.
+Every registered user has a profile.
 
-Main entities:
+Customer profiles contain basic account information.
 
-- Users / Profiles
-- Providers
+Provider profiles contain additional marketplace information such as:
+
+- Business name
+- Category
+- Location
+- Phone number
+- Profile information
 - Services
 - Videos
-- Service Requests
-- Messages
-- Reviews
-- Notifications
+- Verification status
 
-Relationships should remain simple and follow the actual product requirements.
+6. Provider Dashboard
 
----
+Providers have access to a Provider Dashboard.
 
- 6. Storage
+The dashboard allows providers to:
 
-Supabase Storage will be used for uploaded media such as:
+- View service requests
+- Manage bookings
+- Upload and manage videos
+- View reviews
+- Edit their profile
+- Manage verification information
 
-- Provider videos
-- Profile images
-- Other approved media if required
+7. Provider Verification
 
-Public marketplace videos should only be displayed after the required approval process.
+Verification is handled through Account Settings.
 
----
+Tier 1 verification requires:
 
- 7. Provider Video Architecture
+- Business name
+- Identification document
+- Location
+- Phone number
 
-Provider
+The provider submits the information and identification document.
 
-  ↓
+The admin manually reviews the submission.
 
-Upload Video
+Approved providers receive a verification badge.
 
-  ↓
+8. Admin
 
-Storage
+Admin functionality is kept simple for the MVP.
 
-  ↓
+The main administrative responsibility is provider verification.
 
-Video Record Created
+Admin can:
 
-  ↓
+- View verification submissions
+- Review identification documents
+- Approve verification
+- Reject verification
 
-Pending Review
+Admin-only functionality must be protected.
 
-  ↓
+9. Provider Videos
 
-Admin Review
+Providers can upload and manage videos.
 
-  ↓
+Videos are stored using Supabase Storage.
 
-Approved / Rejected
+A video record is stored in the database.
 
- Approved
+The application should follow the agreed moderation/approval flow before displaying videos publicly.
 
-Video becomes visible in:
+Approved videos can appear in:
 
 - Discover
 - Provider Profile
 
- Rejected
-
-Video remains unavailable to customers.
-
-The provider can correct and resubmit where supported.
-
----
-
- 8. Service Request Architecture
+10. Booking Architecture
 
 Customer
 
@@ -146,11 +143,11 @@ Provider Profile
 
   ↓
 
-Request Service
+Book / Request Service
 
   ↓
 
-Request Form
+Booking Form
 
   ↓
 
@@ -162,242 +159,149 @@ Pending
 
   ↓
 
-Provider Reviews Request
+Provider Response
 
-  ↓
+  ├── In Progress
+  │      ↓
+  │   Completed
+  │
+  └── Declined
+         ↓
+   Rejection Reason
 
-Accepted / Declined
+The provider must provide a rejection reason when declining a request.
 
- Accepted
+11. Booking Data
 
-Accepted
+A booking connects:
 
-  ↓
+- Customer
+- Provider
+- Service
+- Location
+- Request details
+- Preferred date/time where supported
+- Booking status
 
-In Progress
+The exact fields should follow the final UI design.
 
-  ↓
+12. Comments and Reviews
 
-Completed
+Comments and reviews are part of the marketplace experience.
 
- Declined
+Reviews are connected to completed bookings.
 
-Request becomes read-only.
+Customers can provide:
 
- Cancelled
+- 1–5 star rating
+- Optional comment
 
-Request becomes read-only.
+Reviews should only be submitted after a completed booking.
 
----
+Social sharing is not part of the MVP.
 
- 9. Chat Architecture
+13. Notifications
 
-Chat belongs to a specific service request.
+Notifications may be used for important events such as:
 
-Customer and Provider can communicate while the request is active.
+- New booking request
+- Booking status changes
+- New message or communication
+- Verification status
+- Review activity
 
-Basic structure:
+The exact notification implementation should remain simple enough for the Build Week timeline.
 
-Service Request
+14. Database
 
-  ↓
+Supabase PostgreSQL stores application data.
 
-Messages
+The initial database entities are:
 
-  ├── Customer
-  └── Provider
+- Profiles
+- Providers
+- Services
+- Videos
+- Service Requests
+- Messages
+- Reviews
+- Notifications
 
-When the request becomes completed, cancelled or declined, the conversation becomes read-only.
+The database structure is documented separately in DATABASE.md.
 
----
+15. Storage
 
- 10. Review Architecture
+Supabase Storage is used for uploaded media such as:
 
-Reviews are connected to completed service requests.
+- Provider videos
+- Profile images
+- Verification documents where required
 
-Flow:
+Sensitive documents such as identification documents must not be publicly accessible.
 
-Completed Request
-
-  ↓
-
-Customer submits review
-
-  ↓
-
-Rating: 1–5
-
-  ↓
-
-Optional Comment
-
-  ↓
-
-Review Stored
-
-Reviews cannot be created before a request is completed.
-
-A completed request should not allow unlimited duplicate reviews.
-
----
-
- 11. Application Structure
-
-The frontend should be organized into clear areas.
-
-Example:
-
-src/
-├── components/
-├── pages/
-├── layouts/
-├── hooks/
-├── services/
-├── lib/
-├── types/
-└── assets/
-
-The exact structure may change during implementation if a simpler structure is more practical.
-
----
-
- 12. Data Flow
-
- Reading Marketplace Data
-
-React App
-
-  ↓
-
-Supabase Query
-
-  ↓
-
-Providers / Videos / Services
-
-  ↓
-
-React UI
-
-
- Creating a Request
-
-React App
-
-  ↓
-
-Request Form
-
-  ↓
-
-Supabase Insert
-
-  ↓
-
-Service Request
-
-  ↓
-
-Provider Dashboard
-
-
- Sending a Message
-
-React App
-
-  ↓
-
-Chat
-
-  ↓
-
-Supabase Insert
-
-  ↓
-
-Messages
-
-  ↓
-
-Other User
-
-
----
-
- 13. Security
+16. Security
 
 Security requirements:
 
 - Never expose private keys in frontend code.
 - Use environment variables for credentials.
 - Use Supabase Row Level Security where required.
-- Users should only access data they are authorized to access.
-- Customers should only manage their own requests.
-- Providers should only manage requests assigned to them.
+- Users should only access information they are authorized to access.
+- Customers should only manage their own bookings.
+- Providers should only manage bookings assigned to them.
+- Providers should not approve their own verification.
 - Admin functions must be protected.
+- Verification documents must be protected from public access.
+- No secrets should be committed to GitHub.
 
-No secrets should be committed to GitHub.
+17. Application Structure
 
----
+The frontend is organized into clear areas:
 
- 14. Deployment
+src/
+├── components/
+├── layouts/
+├── pages/
+├── hooks/
+├── lib/
+├── services/
+├── types/
+└── assets/
 
-The frontend should be deployed to a suitable web hosting platform.
+The structure can be adjusted during implementation if a simpler approach is required.
 
-The production environment should contain:
+18. Development Approach
+
+The team will build the MVP in small, testable parts.
+
+Abubakar and Adam handle development.
+
+Desmond performs daily user testing and identifies bugs using smartphone devices.
+
+Development progress should be pushed to GitHub daily.
+
+19. Deployment
+
+The application must be deployed to a public URL before final submission.
+
+The production setup should contain:
 
 - Production frontend
 - Supabase project
-- Environment variables
+- Production environment variables
 - Production database configuration
 
-The deployed application must be accessible through a public URL before final submission.
+20. Architecture Principle
 
----
-
- 15. Development Principle
-
-Build the simplest architecture that can successfully support the MVP.
+Build the simplest architecture that can support the agreed MVP.
 
 Do not introduce:
 
 - Microservices
-- Unnecessary APIs
-- Complex state-management systems
-- Extra databases
-- Unnecessary third-party services
+- Multiple unnecessary databases
 - Complex infrastructure
-
-unless the actual implementation requires them.
+- Unnecessary APIs
+- Large state-management systems
+- Unnecessary third-party services
 
 The architecture can be improved after the hackathon.
-
----
-
- 16. Build Priority
-
- P0
-
-- Frontend foundation
-- Authentication
-- Marketplace
-- Provider profiles
-- Service requests
-- Request status
-- Provider request management
-
- P1
-
-- Video upload
-- Admin approval
-- Chat
-- Reviews
-- Notifications
-
- P2
-
-- Advanced AI
-- Payments
-- Advanced recommendations
-- Advanced analytics
-- Other non-essential integrations

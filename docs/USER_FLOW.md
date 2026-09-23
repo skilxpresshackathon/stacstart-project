@@ -1,8 +1,8 @@
- StacStart MVP — User Flow
+ Discover — MVP User Flow
 
  1. Marketplace Entry
 
-User opens StacStart.
+User opens Discover.
 
         ↓
 
@@ -14,7 +14,7 @@ Browse provider videos and service cards
 
         ↓
 
-Search or Filter
+Search / Filter
 
         ↓
 
@@ -26,31 +26,51 @@ Provider Profile
 
         ↓
 
-Request Service
+Book / Request Service
 
 
  2. Guest User Flow
 
 Guest
+
   ↓
+
 Discover
+
   ↓
+
 Search / Filter
+
   ↓
+
 View Provider
+
   ↓
+
 Watch Provider Video
+
   ↓
+
 View Provider Profile
+
   ↓
-Request Service
+
+Book / Request Service
+
   ↓
+
 Login Required
+
   ↓
+
 Sign In / Sign Up
+
   ↓
-Continue Request
+
+Continue Booking
+
   ↓
+
 Submit Request
 
 
@@ -72,11 +92,11 @@ Provider Profile
 
         ↓
 
-Request Service
+Book / Request Service
 
         ↓
 
-Request Form
+Booking Form
 
         ↓
 
@@ -92,13 +112,13 @@ Provider Response
 
         ↓
 
-Accepted
+Accepted / In Progress
         OR
-Declined
+Declined + Rejection Reason
 
  If Accepted
 
-Accepted
+Pending
 
   ↓
 
@@ -117,21 +137,21 @@ Customer Review
 Rating + Optional Comment
 
 
- 4. Customer Request Management
+ 4. Customer Booking Management
 
 My Bookings
 
         ↓
 
-View Requests
+View Bookings
 
         ↓
 
-Select Request
+Select Booking
 
         ↓
 
-Request Details
+Booking Details
 
         ↓
 
@@ -139,20 +159,49 @@ View Status
 
         ↓
 
-Chat
+Comments / Communication
 
         ↓
 
 Track Progress
 
 
- 5. Provider Flow
+ 5. Customer → Provider Conversion
+
+Customer
+
+  ↓
+
+Account
+
+  ↓
+
+Become a Provider
+
+  ↓
+
+Provide Additional Provider Information
+
+  ↓
+
+Complete Provider Setup
+
+  ↓
+
+Provider Experience
+
+  ↓
+
+Provider Dashboard
+
+
+ 6. Provider Flow
 
 Provider signs in
 
         ↓
 
-Provider Hub
+Provider Dashboard
 
         ↓
 
@@ -160,7 +209,7 @@ View Incoming Requests
 
         ↓
 
-Open Request
+Open Booking
 
         ↓
 
@@ -183,7 +232,7 @@ In Progress
 
   ↓
 
-Chat with Customer
+Communicate with Customer
 
   ↓
 
@@ -194,139 +243,188 @@ Complete Service
 Completed
 
 
- 6. Provider Video Flow
+ If Declined
 
-Provider Hub
+Decline
+
+  ↓
+
+Enter Rejection Reason
+
+  ↓
+
+Submit
+
+  ↓
+
+Customer sees Declined status + reason
+
+
+ 7. Provider Dashboard
+
+Provider Dashboard
+
+        ├── Service Requests
+        │
+        ├── Videos
+        │
+        ├── Profile
+        │
+        ├── Reviews
+        │
+        └── Verification
+
+
+ 8. Provider Video Flow
+
+Provider Dashboard
 
         ↓
 
-Add / Upload Video
+Videos
 
         ↓
 
-Submit for Review
+Upload Video
 
         ↓
 
-Admin Review
+Manage Videos
+
+        ↓
+
+Video Approval / Moderation Flow
 
         ↓
 
 Approved
-  OR
-Rejected
-
-
- Approved
-
-Approved Video
-
-        ↓
-
-Provider Profile
 
         ↓
 
 Discover Marketplace
 
-
- Rejected
-
-Rejected Video
-
         ↓
-
-Provider receives rejection status
-
-        ↓
-
-Provider may correct and resubmit
-
-
- 7. Navigation
-
- Guest
-
-Discover
-
-  ↓
-
-Search / Filter
-
-  ↓
 
 Provider Profile
 
 
- Customer
+ 9. Tier 1 Verification Flow
 
-Discover
-My Bookings
-Alerts
-Account
+Provider
 
+  ↓
 
- Provider
+Account Settings
 
-Discover
-My Bookings
-Provider Hub
-Account
+  ↓
 
+Verification
 
- 8. Request State Flow
+  ↓
 
-                 ┌───────────┐
-                 │  Pending  │
-                 └─────┬─────┘
-                       │
-              ┌────────┴────────┐
-              ↓                 ↓
-         Accepted            Declined
-              │
-              ↓
-        In Progress
-              │
-              ↓
-          Completed
-              │
-              ↓
-           Review
+Tier 1 Verification
 
+  ↓
 
-Cancellation can occur from an active request where permitted.
+Provide:
 
-Cancelled, Declined and Completed requests become read-only.
+- Business Name
+- Identification Document
+- Location
+- Phone Number
+
+  ↓
+
+Submit
+
+  ↓
+
+Admin Review
+
+  ↓
+
+Approved / Rejected
 
 
- 9. Chat Flow
+ If Approved
 
-Active Request
+Approved
 
-        ↓
+  ↓
 
-Open Request
-
-        ↓
-
-Chat
-
-        ↓
-
-Customer ↔ Provider
-
-        ↓
-
-Request Completed / Cancelled / Declined
-
-        ↓
-
-Chat becomes Read-Only
+Verification Badge
 
 
- 10. Review Flow
+ If Rejected
 
-Completed Request
+Rejected
+
+  ↓
+
+Provider sees verification status
+
+  ↓
+
+Provider can correct information and resubmit where supported
+
+
+ 10. Admin Verification Flow
+
+Admin
+
+  ↓
+
+Admin Dashboard
+
+  ↓
+
+Verification Requests
+
+  ↓
+
+Open Provider Submission
+
+  ↓
+
+Review:
+
+- Business Name
+- Identification Document
+- Location
+- Phone Number
+
+  ↓
+
+Approve
+  OR
+Reject
+
+
+ Approve
+
+Approve
+
+  ↓
+
+Provider becomes verified
+
+  ↓
+
+Verification Badge
+
+
+ Reject
+
+Reject
+
+  ↓
+
+Provider remains unverified
+
+
+ 11. Review Flow
+
+Completed Booking
 
         ↓
 
@@ -346,4 +444,82 @@ Submit Review
 
         ↓
 
-Review becomes permanent
+Review Stored
+
+
+ 12. Comments
+
+Comments are part of the product's engagement experience.
+
+Comments should support the marketplace's focus on:
+
+- Provider work
+- Reviews
+- Booking workflows
+
+Social sharing is not part of the MVP.
+
+
+ 13. Navigation
+
+ Customer
+
+Discover
+My Bookings
+Alerts
+Account
+
+
+ Provider
+
+Discover
+My Bookings
+Provider Dashboard
+Account
+
+
+ Admin
+
+Admin Dashboard
+Verification Requests
+Other required administrative functions
+
+
+ 14. Booking State Flow
+
+```text
+                 ┌───────────┐
+                 │  Pending  │
+                 └─────┬─────┘
+                       │
+              ┌────────┴────────┐
+              ↓                 ↓
+        In Progress          Declined
+              │                 │
+              ↓                 ↓
+          Completed       Rejection Reason
+              │
+              ↓
+           Review
+
+           Discover
+   ↓
+Search / Filter
+   ↓
+Provider Profile
+   ↓
+Book / Request Service
+   ↓
+Sign In / Sign Up
+   ↓
+Submit Booking
+   ↓
+Pending
+   ↓
+Provider Response
+   ↓
+In Progress
+   ↓
+Completed
+   ↓
+Review

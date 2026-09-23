@@ -1,26 +1,26 @@
- StacStart MVP — Product Specification
+ Discover — MVP Product Specification
 
  1. Product Overview
 
-StacStart is a video-first marketplace that helps customers discover local service providers through short service videos and request their services directly.
+Discover is a video-first marketplace that helps customers discover local service providers through short service videos and request their services directly.
 
 The MVP focuses on a simple journey:
 
-Discover → Find a Provider → View Provider → Request Service → Manage Request
+Discover → Find a Provider → View Provider → Book a Service → Manage Booking
 
 ---
 
  2. Problem
 
-Customers often struggle to discover trustworthy local service providers and understand the quality of their work before contacting them.
+Customers need a simple way to discover local service providers, understand their work, and make service bookings.
 
-Service providers also need a simple way to showcase their work and receive service requests from potential customers.
+Service providers need a simple way to showcase their work, receive bookings, manage requests, and build trust through reviews and verification.
 
 ---
 
  3. Solution
 
-StacStart allows service providers to showcase their work through short videos.
+Discover allows service providers to showcase their work through short videos.
 
 Customers can:
 
@@ -28,19 +28,22 @@ Customers can:
 - Search and filter providers
 - Watch provider videos
 - View provider profiles
-- Request a service
-- Track their requests
-- Communicate about an active request
-- Review a provider after a completed request
+- Book/request a service
+- Track their bookings
+- Communicate about an active booking
+- Review a provider after completion
 
 Providers can:
 
-- Create a provider profile
-- Showcase their work
+- Create and manage a provider profile
+- Showcase their work through videos
 - Receive service requests
 - Accept or decline requests
-- Manage active requests
-- Communicate with customers
+- Provide a rejection reason when declining
+- Manage bookings
+- View customer reviews
+- Edit their profile
+- Submit information for business verification
 
 ---
 
@@ -56,7 +59,7 @@ A guest can:
 - Filter providers
 - View provider profiles
 
-A guest must sign in before submitting a service request.
+Authentication is required before performing account-based actions such as submitting a booking.
 
  Customer
 
@@ -64,11 +67,12 @@ A customer can:
 
 - Browse providers
 - View provider profiles
-- Request services
-- View their requests
-- Track request status
-- Chat within an active request
+- Book/request services
+- View their bookings
+- Track booking status
+- Communicate about an active booking
 - Review a provider after completion
+- Convert their account to a provider account
 
  Provider
 
@@ -78,9 +82,21 @@ A provider can:
 - Manage their provider profile
 - Receive service requests
 - Accept or decline requests
-- Manage active requests
-- Communicate with customers
-- Submit work videos for approval
+- Provide a rejection reason when declining
+- Manage active bookings
+- Upload and manage videos
+- View customer reviews
+- Manage verification information
+
+ Admin
+
+An admin can:
+
+- Review provider verification submissions
+- Review submitted identification documents
+- Approve or reject verification
+- Manage verification status
+- Perform required administrative moderation
 
 ---
 
@@ -92,37 +108,29 @@ Discover
 → Search / Filter
 → Provider Results
 → Provider Profile
-→ Request Service
+→ Book / Request Service
 
- Request
+ Booking
 
-Request Service
+Book / Request Service
 → Sign In / Sign Up if required
-→ Request Form
+→ Booking Form
 → Submit Request
 → Pending
 
- Request Lifecycle
+ Booking Lifecycle
 
 Pending
-→ Accepted
 → In Progress
 → Completed
 
-Alternative outcomes:
+Alternative outcome:
 
 Pending
 → Declined
+→ Rejection Reason
 
-Pending / Accepted
-→ Cancelled
-
- Review
-
-Completed
-→ Customer Review
-→ 1–5 Star Rating
-→ Optional Comment
+A booking may also be cancelled where supported by the final product flow.
 
 ---
 
@@ -139,56 +147,117 @@ Completed
 
 - Discover
 - My Bookings
-- Provider Hub
+- Provider Dashboard
 - Account
 
 ---
 
  7. Provider Video Flow
 
-Provider
+Provider Dashboard
+
 → Upload Video
-→ Admin Review
-→ Approved / Rejected
+
+→ Manage Videos
+
+→ Video becomes available according to the application's approval/moderation flow
+
+Approved provider videos can appear in:
+
+- Discover
+- Provider Profile
+
+---
+
+ 8. Provider Verification
+
+Provider verification is handled inside Account Settings.
+
+ Tier 1 Verification
+
+A provider supplies:
+
+- Business name
+- Identification document
+- Location
+- Phone number
+
+The submitted identification document is manually reviewed by an admin.
 
 If approved:
 
-Video
-→ Discover
-→ Provider Profile
+Provider receives a verification badge.
 
-Rejected videos do not appear publicly.
+Verification status should be visible where appropriate in the provider experience.
 
 ---
 
- 8. Request Rules
+ 9. Customer Conversion to Provider
 
-A service request contains:
+A customer can convert their account to a provider account.
 
-- Service
-- Location
-- Description
-- Preferred date
-- Preferred time
+The conversion starts from the customer account experience.
 
-Request statuses:
+Customer
+
+→ Become a Provider
+
+→ Provide additional provider information
+
+→ Complete provider setup
+
+→ Provider experience becomes available
+
+Additional verification may be completed through Account Settings.
+
+---
+
+ 10. Booking Rules
+
+A booking/request contains information required to understand the customer's service request.
+
+The booking lifecycle includes:
 
 - Pending
-- Accepted
-- Declined
 - In Progress
 - Completed
-- Cancelled
+- Declined
 
-Chat is connected to a specific service request.
+When a provider declines a booking, a rejection reason is required.
 
-Completed, declined, or cancelled requests become read-only.
-
-Customers can only submit a review after a request is completed.
+The exact booking fields and final interaction details should follow the approved UI design.
 
 ---
 
- 9. MVP Scope
+ 11. Reviews
+
+Customers can review a provider after a completed booking.
+
+A review can contain:
+
+- 1–5 star rating
+- Optional comment
+
+Reviews should be connected to the completed booking.
+
+---
+
+ 12. Social Features
+
+Social sharing features are intentionally omitted from the MVP.
+
+The product focuses primarily on:
+
+- Discovery
+- Comments
+- Reviews
+- Booking workflows
+- Provider profiles
+- Provider videos
+
+---
+
+ 13. MVP Scope
 
  P0 — Must Have
 
@@ -200,20 +269,22 @@ Customers can only submit a review after a request is completed.
 - Provider videos
 - Customer authentication
 - Provider authentication
-- Service request form
-- Request management
-- Provider request management
-- Request status
-- Basic request-scoped chat
-- Basic review and rating
+- Booking/request form
+- Booking management
+- Provider booking management
+- Booking status
+- Provider profile management
+- Basic reviews and ratings
+- Customer-to-provider conversion
 
  P1 — Important
 
-- Provider video upload
-- Admin video approval
+- Provider video management
+- Tier 1 provider verification
+- Admin verification review
+- Verification badge
+- Comments
 - Notifications
-- Provider verification
-- Improved profile management
 
  P2 — Optional
 
@@ -221,12 +292,12 @@ Customers can only submit a review after a request is completed.
 - Advanced analytics
 - Payments
 - Maps
-- Advanced notifications
+- Advanced notification features
 - Additional AI features
 
 ---
 
- 10. Out of Scope for the MVP
+ 14. Out of Scope for the MVP
 
 The following should not block the first working version:
 
@@ -234,26 +305,27 @@ The following should not block the first working version:
 - Advanced recommendation engines
 - Complex analytics
 - Large-scale moderation systems
-- Advanced AI features
+- Advanced AI features without a clear user benefit
 - Complex infrastructure
 - Microservices
 - Unnecessary third-party integrations
+- Social sharing features
 
 The priority is a working, testable and deployable product.
 
 ---
 
- 11. AI Usage
+ 15. AI Usage
 
 AI may be used where it provides clear value to the product or development process.
 
-AI must not be added only for the purpose of saying that the project uses AI.
+AI should not be added only for the purpose of saying that the project uses AI.
 
 Any AI feature must support a real user problem and remain within the MVP scope.
 
 ---
 
- 12. MVP Success Criteria
+ 16. MVP Success Criteria
 
 The MVP should allow a user to:
 
@@ -261,28 +333,37 @@ The MVP should allow a user to:
 2. Find a service provider
 3. View the provider's work
 4. Open the provider profile
-5. Request a service
-6. Track the request
+5. Request/book a service
+6. Track the booking
 7. Allow the provider to respond
-8. Complete the request
-9. Leave a review
+8. Move the booking through the supported lifecycle
+9. Complete the booking
+10. Leave a review
 
-The complete core journey should work from the frontend through the backend.
+The MVP should also demonstrate:
+
+- Provider profile management
+- Provider video management
+- Tier 1 verification flow
+- Admin verification review
+- Customer-to-provider conversion
 
 ---
 
- 13. Build Week Priority
+ 17. Build Week Priority
 
-During StacStart Build Week, priority is:
+During the StacStart Build Week, priority is:
 
 1. Working core user flow
 2. Frontend and backend integration
 3. Authentication
-4. Request management
-5. Provider functionality
-6. Testing
-7. Deployment
-8. Documentation
-9. Demo preparation
+4. Discovery marketplace
+5. Booking management
+6. Provider functionality
+7. Verification flow
+8. Testing
+9. Deployment
+10. Documentation
+11. Demo and pitch preparation
 
 Optional features must not delay the core MVP.
