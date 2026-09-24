@@ -11,6 +11,7 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
       <div className="search-input-wrapper">
         <SearchIcon className="search-input-icon" />
         <input
+          id="marketplace-search-input"
           type="search"
           className="search-input"
           placeholder="Search for a service or provider"

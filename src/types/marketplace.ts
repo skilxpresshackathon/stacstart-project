@@ -35,3 +35,26 @@ export interface MarketplaceItem {
 }
 
 export type Category = string
+
+export interface User {
+  id: string
+  name: string
+  email: string
+  role: 'customer' | 'provider' | 'admin'
+}
+
+export type BookingStatus = 'pending' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'cancelled'
+
+export interface BookingRequest {
+  id: string
+  customerId: string
+  customerName: string
+  provider: Provider
+  service: Service
+  location: string
+  description: string
+  preferredDate?: string
+  preferredTime?: string
+  status: BookingStatus
+  createdAt: string
+}
