@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Header } from '../components/marketplace/Header'
 import { SearchBar } from '../components/marketplace/SearchBar'
 import { CategoryFilter } from '../components/marketplace/CategoryFilter'
@@ -25,6 +25,39 @@ export function DiscoverPage() {
   const [bookingTargetItem, setBookingTargetItem] = useState<MarketplaceItem | null>(null)
   const [bookings, setBookings] = useState<BookingRequest[]>([])
   const [notification, setNotification] = useState<string | null>(null)
+
+  // Scroll direction detection for header hide/reveal
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true)
+  const [isScrolled, setIsScrolled] = useState(false)
+  const lastScrollY = useRef(0)
+
+  useEffect(() => {
+    if (currentView !== 'discover') return
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      const prevScrollY = lastScrollY.current
+      const delta = currentScrollY - prevScrollY
+
+      setIsScrolled(currentScrollY > 15)
+
+      // Always show header when at the very top of the page
+      if (currentScrollY <= 15) {
+        setIsHeaderVisible(true)
+      } else if (delta > 6 && currentScrollY > 60) {
+        // Scrolling downward -> hide header
+        setIsHeaderVisible(false)
+      } else if (delta < -6) {
+        // Scrolling upward -> immediately reveal header
+        setIsHeaderVisible(true)
+      }
+
+      lastScrollY.current = currentScrollY
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [currentView])
 
   const showNotification = (msg: string) => {
     setNotification(msg)
@@ -107,6 +140,7 @@ export function DiscoverPage() {
 
   const handleNavigateSearch = () => {
     setCurrentView('discover')
+    setIsHeaderVisible(true)
     setTimeout(() => {
       const searchEl = document.getElementById('marketplace-search-input')
       if (searchEl) {
@@ -141,31 +175,43 @@ export function DiscoverPage() {
           </div>
         )}
 
-        <Header
-          user={currentUser}
-          onAuthClick={() => handleOpenAuth('login')}
-          onMenuClick={() => setIsDrawerOpen(true)}
-        />
-
         {currentView === 'discover' ? (
           <>
-            <SearchBar value={searchQuery} onChange={setSearchQuery} />
-            <CategoryFilter
-              categories={CATEGORIES}
-              selectedCategory={selectedCategory}
-              onSelectCategory={setSelectedCategory}
-            />
+            <div
+              className={`marketplace-header-area ${
+                isHeaderVisible ? 'header-visible' : 'header-hidden'
+              } ${isScrolled ? 'scrolled-header' : ''}`}
+            >
+              <Header
+                user={currentUser}
+                onAuthClick={() => handleOpenAuth('login')}
+                onMenuClick={() => setIsDrawerOpen(true)}
+              />
+              <SearchBar value={searchQuery} onChange={setSearchQuery} />
+              <CategoryFilter
+                categories={CATEGORIES}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+              />
+            </div>
             <main className="marketplace-content">
               <ProviderCardList items={filteredItems} onItemClick={handleCardClick} />
             </main>
           </>
         ) : (
-          <main className="marketplace-content">
-            <BookingsView
-              bookings={bookings}
-              onBackToDiscover={() => setCurrentView('discover')}
+          <>
+            <Header
+              user={currentUser}
+              onAuthClick={() => handleOpenAuth('login')}
+              onMenuClick={() => setIsDrawerOpen(true)}
             />
-          </main>
+            <main className="marketplace-content">
+              <BookingsView
+                bookings={bookings}
+                onBackToDiscover={() => setCurrentView('discover')}
+              />
+            </main>
+          </>
         )}
 
         {/* Navigation Drawer */}
