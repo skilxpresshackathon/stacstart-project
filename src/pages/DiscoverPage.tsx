@@ -47,7 +47,7 @@ export function DiscoverPage() {
       } else if (delta > 6 && currentScrollY > 60) {
         // Scrolling downward -> hide header
         setIsHeaderVisible(false)
-      } else if (delta < -6) {
+      } else if (delta < -1) {
         // Scrolling upward -> immediately reveal header
         setIsHeaderVisible(true)
       }

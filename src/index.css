@@ -63,6 +63,8 @@ body {
 
 /* Marketplace Header Area (Participates in scroll: hides on scroll down, reveals immediately on scroll up) */
 .marketplace-header-area {
+  position: sticky;
+  top: 0;
   z-index: 50;
   background-color: var(--color-bg-card);
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
@@ -280,19 +282,41 @@ body {
 /* Marketplace Content & Provider Cards */
 .marketplace-content {
   flex: 1;
-  padding: 8px 16px 40px 16px;
+  padding: 8px 12px 36px 12px;
   display: flex;
   justify-content: center;
 }
 
-/* Single vertical portrait feed across mobile, tablet, and desktop */
+/* Single vertical feed across mobile, tablet, and desktop */
 .provider-card-list {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
   width: 100%;
-  max-width: 420px;
+  max-width: 100%;
   margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+  .marketplace-content {
+    padding: 12px 20px 44px 20px;
+  }
+
+  .provider-card-list {
+    max-width: 580px;
+    gap: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .marketplace-content {
+    padding: 16px 24px 48px 24px;
+  }
+
+  .provider-card-list {
+    max-width: 640px;
+    gap: 24px;
+  }
 }
 
 .provider-card {
@@ -372,17 +396,31 @@ body {
   margin-top: 1px;
 }
 
-/* Video Preview Area - 9:16 Short-Form Vertical Format */
+/* Video Preview Area - Responsive Media Container */
 .video-preview-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 9 / 16;
+  aspect-ratio: 16 / 10;
+  max-height: 480px;
   background-color: var(--color-video-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   user-select: none;
+}
+
+.video-preview-container:has(video) {
+  aspect-ratio: auto;
+}
+
+.video-preview-container video,
+.video-preview-container img {
+  width: 100%;
+  height: auto;
+  max-height: 480px;
+  object-fit: contain;
+  display: block;
 }
 
 .video-duration-badge {
@@ -923,9 +961,9 @@ body {
 }
 
 .detail-video-container {
-  aspect-ratio: 9 / 16;
-  max-height: 420px;
-  width: auto;
+  aspect-ratio: 16 / 10;
+  max-height: 400px;
+  width: 100%;
   margin: 0 auto;
   border-radius: 12px;
 }
