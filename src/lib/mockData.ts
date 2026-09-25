@@ -1,4 +1,4 @@
-import type { MarketplaceItem } from '../types/marketplace'
+import type { MarketplaceItem, SearchFilters } from '../types/marketplace'
 
 /**
  * Temporary local mock data reflecting the approved Figma design.
@@ -13,6 +13,60 @@ export const CATEGORIES: string[] = [
   'Electricians',
   'Photographers',
 ]
+
+export const LOCATIONS: string[] = [
+  'All',
+  'Ikeja, Lagos',
+  'Yaba, Lagos',
+  'Surulere, Lagos',
+  'Lekki, Lagos',
+  'Victoria Island, Lagos',
+]
+
+export const DEFAULT_SEARCH_FILTERS: SearchFilters = {
+  location: '',
+  category: '',
+  minBudget: 0,
+  maxBudget: 200000,
+}
+
+/**
+ * Extracts numeric min and max price from formatted priceDisplay string.
+ * e.g. "₦80,000" -> { min: 80000, max: 80000 }
+ * e.g. "₦18,000–₦30,000" -> { min: 18000, max: 30000 }
+ * e.g. "From ₦100,000" -> { min: 100000, max: 100000 }
+ */
+export function parsePriceRange(priceDisplay: string): { min: number; max: number } {
+  const cleaned = priceDisplay.replace(/,/g, '')
+  const matches = cleaned.match(/\d+/g)
+  if (!matches || matches.length === 0) {
+    return { min: 0, max: 0 }
+  }
+  const nums = matches.map((n) => parseInt(n, 10))
+  if (nums.length === 1) {
+    return { min: nums[0], max: nums[0] }
+  }
+  return { min: Math.min(...nums), max: Math.max(...nums) }
+}
+
+export function formatK(num: number): string {
+  if (num >= 1000) {
+    const k = num / 1000
+    return `${k}k`
+  }
+  return `${num}`
+}
+
+export function formatBudgetChip(min: number, max: number): string {
+  if (min > 0 && max < 200000) {
+    return `₦${formatK(min)} – ₦${formatK(max)}`
+  }
+  if (min > 0) {
+    return `From ₦${formatK(min)}`
+  }
+  return `Up to ₦${formatK(max)}`
+}
+
 
 export const MOCK_MARKETPLACE_ITEMS: MarketplaceItem[] = [
   {
@@ -29,8 +83,9 @@ export const MOCK_MARKETPLACE_ITEMS: MarketplaceItem[] = [
       id: 'srv-1',
       providerId: 'prov-1',
       name: 'Custom Bridal Makeup',
-      priceDisplay: '₦80,000',
-      priceType: 'fixed',
+      priceDisplay: '₦50,000 – ₦80,000',
+      priceType: 'starting_from',
+      description: 'Full bridal glam application with an airbrush finish, including a 4-hour touchup kit for the day',
     },
     video: {
       id: 'vid-1',
@@ -55,6 +110,7 @@ export const MOCK_MARKETPLACE_ITEMS: MarketplaceItem[] = [
       name: 'Toyota Camry Engine Repair',
       priceDisplay: '₦25,000',
       priceType: 'fixed',
+      description: 'Comprehensive diagnostic scan, complete engine overhaul, and timing calibration for optimal fuel economy.',
     },
     video: {
       id: 'vid-2',
@@ -79,6 +135,7 @@ export const MOCK_MARKETPLACE_ITEMS: MarketplaceItem[] = [
       name: 'Ankara Two-Piece Set',
       priceDisplay: '₦18,000–₦30,000',
       priceType: 'starting_from',
+      description: 'Handcrafted custom two-piece traditional Ankara tailored to your exact measurements and styling preferences.',
     },
     video: {
       id: 'vid-3',
@@ -103,6 +160,7 @@ export const MOCK_MARKETPLACE_ITEMS: MarketplaceItem[] = [
       name: 'Skin Fade Haircut',
       priceDisplay: '₦4,000–₦6,000',
       priceType: 'starting_from',
+      description: 'Precision clipper skin fade, beard grooming, hot towel wash and styling finish by master barbers.',
     },
     video: {
       id: 'vid-4',
@@ -127,6 +185,7 @@ export const MOCK_MARKETPLACE_ITEMS: MarketplaceItem[] = [
       name: 'Event Photography',
       priceDisplay: 'From ₦100,000',
       priceType: 'starting_from',
+      description: 'High-definition full-day event photo and video coverage with curated editing and digital gallery delivery.',
     },
     video: {
       id: 'vid-5',

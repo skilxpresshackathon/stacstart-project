@@ -3,9 +3,11 @@ import { SearchIcon } from '../common/Icons'
 interface SearchBarProps {
   value: string
   onChange: (val: string) => void
+  onFocus?: () => void
+  onClick?: () => void
 }
 
-export function SearchBar({ value, onChange }: SearchBarProps) {
+export function SearchBar({ value, onChange, onFocus, onClick }: SearchBarProps) {
   return (
     <section className="search-section" aria-label="Search services or providers">
       <div className="search-input-wrapper">
@@ -17,6 +19,8 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
           placeholder="Search for a service or provider"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onFocus={onFocus}
+          onClick={onClick}
           aria-label="Search for a service or provider"
         />
       </div>
@@ -26,3 +30,4 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
     </section>
   )
 }
+

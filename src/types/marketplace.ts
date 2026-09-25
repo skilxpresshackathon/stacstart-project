@@ -16,6 +16,7 @@ export interface Service {
   name: string
   priceDisplay: string
   priceType?: PriceType
+  description?: string
 }
 
 export interface VideoItem {
@@ -58,3 +59,11 @@ export interface BookingRequest {
   status: BookingStatus
   createdAt: string
 }
+
+export type SearchFilters = {
+  location: string
+  category: string
+  minBudget: number
+  maxBudget: number
+}
+
