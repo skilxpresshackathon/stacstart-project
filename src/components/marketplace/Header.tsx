@@ -15,7 +15,18 @@ export function Header({ user, onAuthClick, onMenuClick }: HeaderProps) {
         <span className="brand-name">Discover</span>
       </div>
 
-      {user ? (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        {!user && (
+          <button
+            type="button"
+            className="auth-action-btn"
+            onClick={onAuthClick}
+            aria-label="Sign up or Sign in"
+          >
+            <UserIcon />
+            <span>Sign up/Sign in</span>
+          </button>
+        )}
         <button
           type="button"
           className="header-menu-btn"
@@ -24,17 +35,7 @@ export function Header({ user, onAuthClick, onMenuClick }: HeaderProps) {
         >
           <MoreMenuIcon />
         </button>
-      ) : (
-        <button
-          type="button"
-          className="auth-action-btn"
-          onClick={onAuthClick}
-          aria-label="Sign up or Sign in"
-        >
-          <UserIcon />
-          <span>Sign up/Sign in</span>
-        </button>
-      )}
+      </div>
     </header>
   )
 }

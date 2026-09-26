@@ -271,13 +271,15 @@ export function DiscoverPage() {
     }
   }
 
-  // URL hash support for testing / direct viewing of Provider Profile
+  // URL hash support for testing / direct viewing of Provider Profile and Bookings
   useEffect(() => {
     const checkHash = () => {
       if (window.location.hash === '#profile') {
         setSelectedProfileItem(MOCK_MARKETPLACE_ITEMS[0])
         setProfileReturnView('discover')
         setCurrentView('provider-profile')
+      } else if (window.location.hash === '#bookings') {
+        setCurrentView('bookings')
       }
     }
     checkHash()
@@ -293,6 +295,27 @@ export function DiscoverPage() {
     showNotification(
       `Service request sent to ${newBooking.provider.businessName}! Status: Pending.`
     )
+  }
+
+  const handleOpenChat = (booking: BookingRequest) => {
+    showNotification(
+      `Chat with ${booking.provider.businessName} will be available in the upcoming Chat update.`
+    )
+  }
+
+  const handleReviewBooking = (booking: BookingRequest) => {
+    showNotification(
+      `Review for ${booking.provider.businessName} will be available soon.`
+    )
+  }
+
+  const handleDeleteBooking = (bookingId: string) => {
+    setBookings((prev) => prev.filter((b) => b.id !== bookingId))
+    showNotification('Booking removed.')
+  }
+
+  const handleEditBooking = (booking: BookingRequest) => {
+    showNotification(`Editing request for ${booking.service.name}.`)
   }
 
   // Drawer Navigation
@@ -319,11 +342,7 @@ export function DiscoverPage() {
   const handleNavigateBookings = () => {
     setSelectedDetailItem(null)
     setBookingTargetItem(null)
-    if (!currentUser) {
-      setAuthModal({ isOpen: true, mode: 'login' })
-    } else {
-      setCurrentView('bookings')
-    }
+    setCurrentView('bookings')
   }
 
   return (
@@ -367,23 +386,22 @@ export function DiscoverPage() {
             onProviderClick={() => handleOpenProviderProfile(bookingTargetItem, 'request-service')}
           />
         ) : currentView === 'bookings' ? (
-          <>
-            <Header
-              user={currentUser}
-              onAuthClick={() => handleOpenAuth('login')}
-              onMenuClick={() => setIsDrawerOpen(true)}
-            />
-            <main className="marketplace-content">
-              <BookingsView
-                bookings={bookings}
-                onBackToDiscover={() => {
-                  setCurrentView('discover')
-                  setIsSearchActive(false)
-                }}
-                onProviderClick={handleProviderClickFromBookings}
-              />
-            </main>
-          </>
+          <BookingsView
+            bookings={bookings}
+            onBackToDiscover={() => {
+              setCurrentView('discover')
+              setIsSearchActive(false)
+              if (window.location.hash === '#bookings') {
+                history.pushState(null, '', window.location.pathname + window.location.search)
+              }
+            }}
+            onProviderClick={handleProviderClickFromBookings}
+            onMenuClick={() => setIsDrawerOpen(true)}
+            onOpenChat={handleOpenChat}
+            onReviewBooking={handleReviewBooking}
+            onDeleteBooking={handleDeleteBooking}
+            onEditBooking={handleEditBooking}
+          />
         ) : (
           /* Discover or Search Activity View */
           isSearchActive ? (
