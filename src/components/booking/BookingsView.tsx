@@ -32,6 +32,8 @@ interface BookingsViewProps {
   onReviewBooking?: (booking: BookingRequest) => void
   onDeleteBooking?: (bookingId: string) => void
   onEditBooking?: (booking: BookingRequest) => void
+  activeTab?: FilterTab
+  onTabChange?: (tab: FilterTab) => void
 }
 
 export function BookingsView({
@@ -43,8 +45,16 @@ export function BookingsView({
   onReviewBooking,
   onDeleteBooking,
   onEditBooking,
+  activeTab,
+  onTabChange,
 }: BookingsViewProps) {
-  const [selectedTab, setSelectedTab] = useState<FilterTab>('All')
+  const [internalTab, setInternalTab] = useState<FilterTab>('All')
+  const selectedTab = activeTab !== undefined ? activeTab : internalTab
+
+  const handleTabClick = (tab: FilterTab) => {
+    setInternalTab(tab)
+    onTabChange?.(tab)
+  }
 
   // Filter bookings according to active tab
   const filteredBookings = bookings.filter((booking) => {
@@ -95,7 +105,7 @@ export function BookingsView({
               role="tab"
               aria-selected={isActive}
               className={`booking-tab-pill ${isActive ? 'active' : ''}`}
-              onClick={() => setSelectedTab(tab)}
+              onClick={() => handleTabClick(tab)}
             >
               {tab}
             </button>

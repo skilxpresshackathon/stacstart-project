@@ -9,6 +9,7 @@ import { VideoViewer } from '../components/marketplace/VideoViewer'
 import { ProviderProfile } from '../components/marketplace/ProviderProfile'
 import { RequestService } from '../components/booking/RequestService'
 import { BookingsView } from '../components/booking/BookingsView'
+import { ChatView, type ChatMessage } from '../components/chat/ChatView'
 import { SearchHeader } from '../components/search/SearchHeader'
 import { SearchResultCard } from '../components/search/SearchResultCard'
 import { FilterSheet } from '../components/search/FilterSheet'
@@ -20,13 +21,13 @@ import {
   DEFAULT_SEARCH_FILTERS,
   parsePriceRange,
 } from '../lib/mockData'
-import type { MarketplaceItem, User, BookingRequest, SearchFilters, Provider } from '../types/marketplace'
+import type { MarketplaceItem, User, BookingRequest, BookingStatus, SearchFilters, Provider } from '../types/marketplace'
 
 export function DiscoverPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile'>('discover')
+  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile' | 'chat'>('discover')
   const [selectedProfileItem, setSelectedProfileItem] = useState<MarketplaceItem | null>(null)
-  const [profileReturnView, setProfileReturnView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service'>('discover')
+  const [profileReturnView, setProfileReturnView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat'>('discover')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [isSearchActive, setIsSearchActive] = useState(false)
@@ -40,6 +41,9 @@ export function DiscoverPage() {
   const [selectedDetailItem, setSelectedDetailItem] = useState<MarketplaceItem | null>(null)
   const [bookingTargetItem, setBookingTargetItem] = useState<MarketplaceItem | null>(null)
   const [bookings, setBookings] = useState<BookingRequest[]>([])
+  const [bookingsTab, setBookingsTab] = useState<'All' | 'Pending' | 'Accepted' | 'In Progress' | 'Declined' | 'Canceled' | 'Completed'>('All')
+  const [activeChatBooking, setActiveChatBooking] = useState<BookingRequest | null>(null)
+  const [chatMessagesMap, setChatMessagesMap] = useState<Record<string, ChatMessage[]>>({})
   const [notification, setNotification] = useState<string | null>(null)
 
   // Scroll position preservation for Discover feed
@@ -230,7 +234,7 @@ export function DiscoverPage() {
 
   const handleOpenProviderProfile = (
     item: MarketplaceItem,
-    fromView: 'discover' | 'bookings' | 'video-viewer' | 'request-service'
+    fromView: 'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat'
   ) => {
     if (fromView === 'discover' && !isSearchActive) {
       lastDiscoverScrollY.current = window.scrollY
@@ -246,6 +250,14 @@ export function DiscoverPage() {
       MOCK_MARKETPLACE_ITEMS.find((it) => it.provider.businessName === provider.businessName) ||
       MOCK_MARKETPLACE_ITEMS[0]
     handleOpenProviderProfile(matchingItem, 'bookings')
+  }
+
+  const handleProviderClickFromChat = (provider: Provider) => {
+    const matchingItem =
+      MOCK_MARKETPLACE_ITEMS.find((it) => it.provider.id === provider.id) ||
+      MOCK_MARKETPLACE_ITEMS.find((it) => it.provider.businessName === provider.businessName) ||
+      MOCK_MARKETPLACE_ITEMS[0]
+    handleOpenProviderProfile(matchingItem, 'chat')
   }
 
   const handleBackFromProviderProfile = () => {
@@ -271,7 +283,7 @@ export function DiscoverPage() {
     }
   }
 
-  // URL hash support for testing / direct viewing of Provider Profile and Bookings
+  // URL hash support for testing / direct viewing of Provider Profile, Bookings, and Chat states
   useEffect(() => {
     const checkHash = () => {
       if (window.location.hash === '#profile') {
@@ -280,6 +292,18 @@ export function DiscoverPage() {
         setCurrentView('provider-profile')
       } else if (window.location.hash === '#bookings') {
         setCurrentView('bookings')
+      } else if (window.location.hash === '#chat-pending') {
+        setActiveChatBooking(createDemoBooking('pending'))
+        setCurrentView('chat')
+      } else if (window.location.hash === '#chat-inprogress') {
+        setActiveChatBooking(createDemoBooking('in_progress'))
+        setCurrentView('chat')
+      } else if (window.location.hash === '#chat-declined') {
+        setActiveChatBooking(createDemoBooking('declined'))
+        setCurrentView('chat')
+      } else if (window.location.hash === '#chat-completed') {
+        setActiveChatBooking(createDemoBooking('completed'))
+        setCurrentView('chat')
       }
     }
     checkHash()
@@ -298,9 +322,42 @@ export function DiscoverPage() {
   }
 
   const handleOpenChat = (booking: BookingRequest) => {
-    showNotification(
-      `Chat with ${booking.provider.businessName} will be available in the upcoming Chat update.`
-    )
+    setActiveChatBooking(booking)
+    setCurrentView('chat')
+  }
+
+  const handleBackFromChat = () => {
+    setCurrentView('bookings')
+    if (window.location.hash.startsWith('#chat')) {
+      history.pushState(null, '', window.location.pathname + window.location.search)
+    }
+  }
+
+  const handleSendMessageInChat = (bookingId: string, text: string) => {
+    const now = new Date()
+    const timeStr = now
+      .toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+      .replace(' ', '')
+
+    const newMsg: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      sender: 'customer',
+      text,
+      timestamp: timeStr,
+      dateLabel: 'Today',
+    }
+
+    setChatMessagesMap((prev) => {
+      const existing = prev[bookingId]
+      if (existing) {
+        return { ...prev, [bookingId]: [...existing, newMsg] }
+      }
+      return { ...prev, [bookingId]: [newMsg] }
+    })
   }
 
   const handleReviewBooking = (booking: BookingRequest) => {
@@ -385,9 +442,19 @@ export function DiscoverPage() {
             onSubmitBooking={handleBookingSubmit}
             onProviderClick={() => handleOpenProviderProfile(bookingTargetItem, 'request-service')}
           />
+        ) : currentView === 'chat' && activeChatBooking ? (
+          <ChatView
+            booking={activeChatBooking}
+            onBack={handleBackFromChat}
+            onProviderClick={handleProviderClickFromChat}
+            messages={chatMessagesMap[activeChatBooking.id]}
+            onSendMessage={(text) => handleSendMessageInChat(activeChatBooking.id, text)}
+          />
         ) : currentView === 'bookings' ? (
           <BookingsView
             bookings={bookings}
+            activeTab={bookingsTab}
+            onTabChange={setBookingsTab}
             onBackToDiscover={() => {
               setCurrentView('discover')
               setIsSearchActive(false)
@@ -540,4 +607,26 @@ export function DiscoverPage() {
     </div>
   )
 }
+
+function createDemoBooking(status: BookingStatus): BookingRequest {
+  return {
+    id: `demo-${status}`,
+    customerId: 'cust-1',
+    customerName: 'Customer',
+    provider: MOCK_MARKETPLACE_ITEMS[0].provider, // Ade Beauty Studio
+    service: {
+      id: 'srv-1',
+      providerId: 'prov-1',
+      name: 'Custom Bridal Makeup',
+      priceDisplay: '₦80,000',
+    },
+    location: 'Ikeja, Lagos',
+    description: 'Bridal makeup for my wedding ceremony and reception, with long-wear finish.',
+    preferredDate: 'Dec 14',
+    preferredTime: '12:00 PM',
+    status,
+    createdAt: '2026-12-08T10:00:00Z',
+  }
+}
+
 
