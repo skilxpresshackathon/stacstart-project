@@ -6,6 +6,7 @@ import { ProviderCardList } from '../components/marketplace/ProviderCardList'
 import { NavDrawer } from '../components/navigation/NavDrawer'
 import { AuthModal, type AuthMode } from '../components/auth/AuthModal'
 import { VideoViewer } from '../components/marketplace/VideoViewer'
+import { ProviderProfile } from '../components/marketplace/ProviderProfile'
 import { RequestService } from '../components/booking/RequestService'
 import { BookingsView } from '../components/booking/BookingsView'
 import { SearchHeader } from '../components/search/SearchHeader'
@@ -23,7 +24,8 @@ import type { MarketplaceItem, User, BookingRequest, SearchFilters } from '../ty
 
 export function DiscoverPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service'>('discover')
+  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile'>('discover')
+  const [selectedProfileItem, setSelectedProfileItem] = useState<MarketplaceItem | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [isSearchActive, setIsSearchActive] = useState(false)
@@ -225,6 +227,36 @@ export function DiscoverPage() {
     setCurrentView('video-viewer')
   }
 
+  const handleBackFromProviderProfile = () => {
+    setCurrentView('discover')
+    setSelectedProfileItem(null)
+    if (window.location.hash === '#profile') {
+      history.pushState(null, '', window.location.pathname + window.location.search)
+    }
+  }
+
+  const handleRequestServiceFromProviderProfile = (item: MarketplaceItem) => {
+    setBookingTargetItem(item)
+    if (!currentUser) {
+      setAuthModal({ isOpen: true, mode: 'login' })
+    } else {
+      setCurrentView('request-service')
+    }
+  }
+
+  // URL hash support for testing / direct viewing of Provider Profile
+  useEffect(() => {
+    const checkHash = () => {
+      if (window.location.hash === '#profile') {
+        setSelectedProfileItem(MOCK_MARKETPLACE_ITEMS[0])
+        setCurrentView('provider-profile')
+      }
+    }
+    checkHash()
+    window.addEventListener('hashchange', checkHash)
+    return () => window.removeEventListener('hashchange', checkHash)
+  }, [])
+
   const handleBookingSubmit = (newBooking: BookingRequest) => {
     setBookings((prev) => [newBooking, ...prev])
     setBookingTargetItem(null)
@@ -284,7 +316,13 @@ export function DiscoverPage() {
         )}
 
         {/* View Switcher */}
-        {currentView === 'video-viewer' && selectedDetailItem ? (
+        {currentView === 'provider-profile' && selectedProfileItem ? (
+          <ProviderProfile
+            item={selectedProfileItem}
+            onBack={handleBackFromProviderProfile}
+            onRequestService={handleRequestServiceFromProviderProfile}
+          />
+        ) : currentView === 'video-viewer' && selectedDetailItem ? (
           <VideoViewer
             item={selectedDetailItem}
             onBack={handleBackFromVideoViewer}

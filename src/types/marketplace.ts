@@ -1,5 +1,14 @@
 export type PriceType = 'fixed' | 'starting_from' | 'negotiable'
 
+export interface Review {
+  id: string
+  authorName: string
+  authorAvatarUrl?: string
+  rating: number
+  comment: string
+  date: string
+}
+
 export interface Provider {
   id: string
   businessName: string
@@ -8,6 +17,11 @@ export interface Provider {
   location: string
   isVerified: boolean
   avatarUrl?: string
+  bio?: string
+  reviewCount?: number
+  services?: Service[]
+  featuredVideos?: VideoItem[]
+  reviews?: Review[]
 }
 
 export interface Service {
@@ -25,6 +39,7 @@ export interface VideoItem {
   duration: string
   videoUrl?: string
   thumbnailUrl?: string
+  title?: string
 }
 
 export interface MarketplaceItem {

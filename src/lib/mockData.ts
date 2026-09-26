@@ -78,6 +78,68 @@ export const MOCK_MARKETPLACE_ITEMS: MarketplaceItem[] = [
       category: 'Makeup Artists',
       location: 'Ikeja, Lagos',
       isVerified: true,
+      bio: 'Bridal and event makeup artist based in Ikeja, specializing in soft glam and long-wear looks for weddings, photoshoots, and traditional ceremonies across Lagos.',
+      reviewCount: 126,
+      services: [
+        {
+          id: 'srv-1',
+          providerId: 'prov-1',
+          name: 'Custom Bridal Makeup',
+          priceDisplay: '₦80,000',
+        },
+        {
+          id: 'srv-1b',
+          providerId: 'prov-1',
+          name: 'Photoshoot Makeup',
+          priceDisplay: '₦25,000',
+        },
+        {
+          id: 'srv-1c',
+          providerId: 'prov-1',
+          name: 'Engagement Makeup',
+          priceDisplay: '₦35,000 – ₦45,000',
+        },
+      ],
+      featuredVideos: [
+        {
+          id: 'vid-1a',
+          providerId: 'prov-1',
+          title: 'Custom Bridal Makeup',
+          duration: '0:22',
+        },
+        {
+          id: 'vid-1b',
+          providerId: 'prov-1',
+          title: 'Soft Glam Look',
+          duration: '0:15',
+        },
+        {
+          id: 'vid-1c',
+          providerId: 'prov-1',
+          duration: '0:19',
+        },
+        {
+          id: 'vid-1d',
+          providerId: 'prov-1',
+          duration: '0:12',
+        },
+      ],
+      reviews: [
+        {
+          id: 'rev-1',
+          authorName: 'Kristin Watson',
+          rating: 5,
+          comment: '“One of the best make-up sessions I’ve had.”',
+          date: 'Sept 12, 2026',
+        },
+        {
+          id: 'rev-2',
+          authorName: 'Joan Dennis',
+          rating: 4,
+          comment: '“Good customer service.”',
+          date: 'Sept 02, 2026',
+        },
+      ],
     },
     service: {
       id: 'srv-1',
