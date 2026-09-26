@@ -15,6 +15,7 @@ interface RequestServiceProps {
   user: User | null
   onBack: () => void
   onSubmitBooking: (booking: BookingRequest) => void
+  onProviderClick?: () => void
 }
 
 export function RequestService({
@@ -22,6 +23,7 @@ export function RequestService({
   user,
   onBack,
   onSubmitBooking,
+  onProviderClick,
 }: RequestServiceProps) {
   // Service selection
   const [selectedService, setSelectedService] = useState<Service | null>(item?.service || null)
@@ -38,7 +40,6 @@ export function RequestService({
 
   // Validation / Error state
   const [error, setError] = useState('')
-
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -111,7 +112,12 @@ export function RequestService({
         </header>
 
         {/* Provider section */}
-        <div className="request-service-provider-row">
+        <button
+          type="button"
+          className="request-service-provider-btn"
+          onClick={() => onProviderClick?.()}
+          aria-label={`View ${provider.businessName} profile`}
+        >
           <div className="request-service-avatar" aria-hidden="true">
             {provider.initials}
           </div>
@@ -123,7 +129,7 @@ export function RequestService({
               </span>
             )}
           </div>
-        </div>
+        </button>
 
         {error && (
           <div className="request-service-error-banner" role="alert">

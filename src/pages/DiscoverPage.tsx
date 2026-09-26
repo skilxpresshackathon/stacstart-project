@@ -20,12 +20,13 @@ import {
   DEFAULT_SEARCH_FILTERS,
   parsePriceRange,
 } from '../lib/mockData'
-import type { MarketplaceItem, User, BookingRequest, SearchFilters } from '../types/marketplace'
+import type { MarketplaceItem, User, BookingRequest, SearchFilters, Provider } from '../types/marketplace'
 
 export function DiscoverPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile'>('discover')
   const [selectedProfileItem, setSelectedProfileItem] = useState<MarketplaceItem | null>(null)
+  const [profileReturnView, setProfileReturnView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service'>('discover')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [isSearchActive, setIsSearchActive] = useState(false)
@@ -227,9 +228,35 @@ export function DiscoverPage() {
     setCurrentView('video-viewer')
   }
 
+  const handleOpenProviderProfile = (
+    item: MarketplaceItem,
+    fromView: 'discover' | 'bookings' | 'video-viewer' | 'request-service'
+  ) => {
+    if (fromView === 'discover' && !isSearchActive) {
+      lastDiscoverScrollY.current = window.scrollY
+    }
+    setProfileReturnView(fromView)
+    setSelectedProfileItem(item)
+    setCurrentView('provider-profile')
+  }
+
+  const handleProviderClickFromBookings = (provider: Provider) => {
+    const matchingItem =
+      MOCK_MARKETPLACE_ITEMS.find((it) => it.provider.id === provider.id) ||
+      MOCK_MARKETPLACE_ITEMS.find((it) => it.provider.businessName === provider.businessName) ||
+      MOCK_MARKETPLACE_ITEMS[0]
+    handleOpenProviderProfile(matchingItem, 'bookings')
+  }
+
   const handleBackFromProviderProfile = () => {
-    setCurrentView('discover')
+    const returnView = profileReturnView
+    setCurrentView(returnView)
     setSelectedProfileItem(null)
+    if (returnView === 'discover' && !isSearchActive) {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, lastDiscoverScrollY.current)
+      })
+    }
     if (window.location.hash === '#profile') {
       history.pushState(null, '', window.location.pathname + window.location.search)
     }
@@ -249,6 +276,7 @@ export function DiscoverPage() {
     const checkHash = () => {
       if (window.location.hash === '#profile') {
         setSelectedProfileItem(MOCK_MARKETPLACE_ITEMS[0])
+        setProfileReturnView('discover')
         setCurrentView('provider-profile')
       }
     }
@@ -327,6 +355,7 @@ export function DiscoverPage() {
             item={selectedDetailItem}
             onBack={handleBackFromVideoViewer}
             onRequestService={handleRequestServiceFromVideoViewer}
+            onProviderClick={(item) => handleOpenProviderProfile(item, 'video-viewer')}
           />
         ) : currentView === 'request-service' && bookingTargetItem ? (
           <RequestService
@@ -335,6 +364,7 @@ export function DiscoverPage() {
             user={currentUser}
             onBack={handleBackFromRequestService}
             onSubmitBooking={handleBookingSubmit}
+            onProviderClick={() => handleOpenProviderProfile(bookingTargetItem, 'request-service')}
           />
         ) : currentView === 'bookings' ? (
           <>
@@ -350,6 +380,7 @@ export function DiscoverPage() {
                   setCurrentView('discover')
                   setIsSearchActive(false)
                 }}
+                onProviderClick={handleProviderClickFromBookings}
               />
             </main>
           </>
@@ -377,6 +408,9 @@ export function DiscoverPage() {
                         key={item.id}
                         item={item}
                         onClick={handleCardClick}
+                        onProviderClick={(targetItem) =>
+                          handleOpenProviderProfile(targetItem, 'discover')
+                        }
                       />
                     ))}
                   </div>
@@ -433,7 +467,13 @@ export function DiscoverPage() {
                 />
               </div>
               <main className="marketplace-content">
-                <ProviderCardList items={discoverItems} onItemClick={handleCardClick} />
+                <ProviderCardList
+                  items={discoverItems}
+                  onItemClick={handleCardClick}
+                  onProviderClick={(targetItem) =>
+                    handleOpenProviderProfile(targetItem, 'discover')
+                  }
+                />
               </main>
             </>
           )

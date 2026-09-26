@@ -4,9 +4,10 @@ import { ProviderCard } from './ProviderCard'
 interface ProviderCardListProps {
   items: MarketplaceItem[]
   onItemClick?: (item: MarketplaceItem) => void
+  onProviderClick?: (item: MarketplaceItem) => void
 }
 
-export function ProviderCardList({ items, onItemClick }: ProviderCardListProps) {
+export function ProviderCardList({ items, onItemClick, onProviderClick }: ProviderCardListProps) {
   if (items.length === 0) {
     return (
       <div className="empty-state">
@@ -21,7 +22,12 @@ export function ProviderCardList({ items, onItemClick }: ProviderCardListProps) 
   return (
     <section className="provider-card-list" aria-label="Featured service providers">
       {items.map((item) => (
-        <ProviderCard key={item.id} item={item} onCardClick={onItemClick} />
+        <ProviderCard
+          key={item.id}
+          item={item}
+          onCardClick={onItemClick}
+          onProviderClick={onProviderClick}
+        />
       ))}
     </section>
   )

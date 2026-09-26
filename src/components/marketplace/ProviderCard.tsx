@@ -9,10 +9,16 @@ import {
 interface ProviderCardProps {
   item: MarketplaceItem
   onCardClick?: (item: MarketplaceItem) => void
+  onProviderClick?: (item: MarketplaceItem) => void
 }
 
-export function ProviderCard({ item, onCardClick }: ProviderCardProps) {
+export function ProviderCard({ item, onCardClick, onProviderClick }: ProviderCardProps) {
   const { provider, service, video, rating } = item
+
+  const handleProviderClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onProviderClick?.(item)
+  }
 
   return (
     <article
@@ -22,23 +28,30 @@ export function ProviderCard({ item, onCardClick }: ProviderCardProps) {
     >
       {/* Provider Header */}
       <header className="card-header">
-        <div className="provider-avatar" aria-hidden="true">
-          {provider.initials}
-        </div>
-        <div className="provider-info">
-          <div className="provider-name-row">
-            <h2 className="provider-name">{provider.businessName}</h2>
-            {provider.isVerified && (
-              <span className="verified-badge-wrapper" title="Verified Provider">
-                <VerifiedBadgeIcon />
-              </span>
-            )}
+        <button
+          type="button"
+          className="card-provider-identity-btn"
+          onClick={handleProviderClick}
+          aria-label={`View ${provider.businessName} profile`}
+        >
+          <div className="provider-avatar" aria-hidden="true">
+            {provider.initials}
           </div>
-          <div className="provider-location">
-            <LocationPinIcon />
-            <span>{provider.location}</span>
+          <div className="provider-info">
+            <div className="provider-name-row">
+              <span className="provider-name">{provider.businessName}</span>
+              {provider.isVerified && (
+                <span className="verified-badge-wrapper" title="Verified Provider">
+                  <VerifiedBadgeIcon />
+                </span>
+              )}
+            </div>
+            <div className="provider-location">
+              <LocationPinIcon />
+              <span>{provider.location}</span>
+            </div>
           </div>
-        </div>
+        </button>
       </header>
 
       {/* Video Preview Area */}

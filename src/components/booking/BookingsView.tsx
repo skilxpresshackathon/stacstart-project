@@ -1,12 +1,13 @@
-import type { BookingRequest } from '../../types/marketplace'
+import type { BookingRequest, Provider } from '../../types/marketplace'
 import { BackArrowIcon, CalendarIcon, LocationPinIcon } from '../common/Icons'
 
 interface BookingsViewProps {
   bookings: BookingRequest[]
   onBackToDiscover: () => void
+  onProviderClick?: (provider: Provider) => void
 }
 
-export function BookingsView({ bookings, onBackToDiscover }: BookingsViewProps) {
+export function BookingsView({ bookings, onBackToDiscover, onProviderClick }: BookingsViewProps) {
   return (
     <section className="bookings-view" aria-label="Customer Bookings">
       <div className="bookings-header">
@@ -42,15 +43,20 @@ export function BookingsView({ bookings, onBackToDiscover }: BookingsViewProps) 
           {bookings.map((booking) => (
             <article key={booking.id} className="booking-card">
               <div className="booking-card-top">
-                <div className="booking-provider-info">
+                <button
+                  type="button"
+                  className="booking-provider-btn"
+                  onClick={() => onProviderClick?.(booking.provider)}
+                  aria-label={`View ${booking.provider.businessName} profile`}
+                >
                   <div className="provider-avatar" aria-hidden="true">
                     {booking.provider.initials}
                   </div>
-                  <div>
-                    <h3 className="booking-provider-name">{booking.provider.businessName}</h3>
+                  <div className="booking-provider-text">
+                    <span className="booking-provider-name">{booking.provider.businessName}</span>
                     <span className="booking-category">{booking.provider.category}</span>
                   </div>
-                </div>
+                </button>
 
                 <span className={`booking-status-badge status-${booking.status}`}>
                   {booking.status.replace('_', ' ')}

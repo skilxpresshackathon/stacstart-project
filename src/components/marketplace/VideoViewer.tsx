@@ -12,9 +12,15 @@ interface VideoViewerProps {
   item: MarketplaceItem | null
   onBack: () => void
   onRequestService: (item: MarketplaceItem) => void
+  onProviderClick?: (item: MarketplaceItem) => void
 }
 
-export function VideoViewer({ item, onBack, onRequestService }: VideoViewerProps) {
+export function VideoViewer({
+  item,
+  onBack,
+  onRequestService,
+  onProviderClick,
+}: VideoViewerProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -64,7 +70,12 @@ export function VideoViewer({ item, onBack, onRequestService }: VideoViewerProps
         {/* Bottom Overlay Content */}
         <div className="video-viewer-bottom-overlay">
           {/* Provider row */}
-          <div className="video-viewer-provider-row">
+          <button
+            type="button"
+            className="video-viewer-provider-btn"
+            onClick={() => onProviderClick?.(item)}
+            aria-label={`View ${provider.businessName} profile`}
+          >
             <div className="video-viewer-avatar" aria-hidden="true">
               {provider.initials}
             </div>
@@ -74,7 +85,7 @@ export function VideoViewer({ item, onBack, onRequestService }: VideoViewerProps
                 <VerifiedBadgeIcon />
               </span>
             )}
-          </div>
+          </button>
 
           {/* Service Title */}
           <h1 className="video-viewer-service-title">{service.name}</h1>

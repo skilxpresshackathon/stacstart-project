@@ -4,9 +4,15 @@ import { VerifiedBadgeIcon, PlayIcon, StarIcon, LocationPinIcon } from '../commo
 interface SearchResultCardProps {
   item: MarketplaceItem
   onClick: (item: MarketplaceItem) => void
+  onProviderClick?: (item: MarketplaceItem) => void
 }
 
-export function SearchResultCard({ item, onClick }: SearchResultCardProps) {
+export function SearchResultCard({ item, onClick, onProviderClick }: SearchResultCardProps) {
+  const handleProviderClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onProviderClick?.(item)
+  }
+
   return (
     <article
       className="search-result-card"
@@ -33,10 +39,17 @@ export function SearchResultCard({ item, onClick }: SearchResultCardProps) {
       <div className="search-result-content">
         <div className="search-result-header">
           <div className="search-result-provider-row">
-            <span className="search-result-business">{item.provider.businessName}</span>
-            {item.provider.isVerified && (
-              <VerifiedBadgeIcon className="search-result-verified" />
-            )}
+            <button
+              type="button"
+              className="search-result-provider-btn"
+              onClick={handleProviderClick}
+              aria-label={`View ${item.provider.businessName} profile`}
+            >
+              <span className="search-result-business">{item.provider.businessName}</span>
+              {item.provider.isVerified && (
+                <VerifiedBadgeIcon className="search-result-verified" />
+              )}
+            </button>
           </div>
           <h3 className="search-result-service-name">{item.service.name}</h3>
           <div className="search-result-location">
