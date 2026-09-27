@@ -6,6 +6,7 @@ import {
   CalendarIcon,
   SignOutIcon,
   DashboardGridIcon,
+  VideoCameraIcon,
 } from '../common/Icons'
 
 interface NavDrawerProps {
@@ -15,6 +16,7 @@ interface NavDrawerProps {
   onNavigateSearch: () => void
   onNavigateBookings: () => void
   onNavigateProviderHub?: () => void
+  onNavigateVideoModeration?: () => void
   onSignOut: () => void
   isProvider?: boolean
   currentView?: string
@@ -27,6 +29,7 @@ export function NavDrawer({
   onNavigateSearch,
   onNavigateBookings,
   onNavigateProviderHub,
+  onNavigateVideoModeration,
   onSignOut,
   isProvider = false,
   currentView,
@@ -113,6 +116,22 @@ export function NavDrawer({
             >
               <DashboardGridIcon className="nav-drawer-icon" />
               <span>Provider Hub</span>
+            </button>
+          )}
+
+          {isProvider && onNavigateVideoModeration && (
+            <button
+              type="button"
+              className={`nav-drawer-item ${
+                currentView === 'video-moderation' ? 'nav-drawer-item-active' : ''
+              }`}
+              onClick={() => {
+                onNavigateVideoModeration()
+                onClose()
+              }}
+            >
+              <VideoCameraIcon className="nav-drawer-icon" />
+              <span>Video Moderation</span>
             </button>
           )}
 

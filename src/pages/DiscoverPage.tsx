@@ -17,6 +17,7 @@ import { ProviderVideos } from '../components/provider/ProviderVideos'
 import { ProviderUploadVideo } from '../components/provider/ProviderUploadVideo'
 import { ReviewVideo } from '../components/admin/ReviewVideo'
 import { RejectVideo } from '../components/admin/RejectVideo'
+import { VideoModeration } from '../components/admin/VideoModeration'
 import { SearchHeader } from '../components/search/SearchHeader'
 import { SearchResultCard } from '../components/search/SearchResultCard'
 import { FilterSheet } from '../components/search/FilterSheet'
@@ -31,12 +32,14 @@ import {
   DEFAULT_REVIEW_VIDEO_ITEM,
   type ReviewVideoItem,
   type RejectionReason,
+  type ModerationVideoItem,
+  INITIAL_MODERATION_VIDEOS,
 } from '../lib/mockData'
 import type { MarketplaceItem, User, BookingRequest, BookingStatus, SearchFilters, Provider } from '../types/marketplace'
 
 export function DiscoverPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile' | 'chat' | 'provider-signup' | 'provider-hub' | 'provider-requests' | 'provider-request-details' | 'provider-videos' | 'provider-upload-video' | 'review-video' | 'reject-video'>('discover')
+  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile' | 'chat' | 'provider-signup' | 'provider-hub' | 'provider-requests' | 'provider-request-details' | 'provider-videos' | 'provider-upload-video' | 'review-video' | 'reject-video' | 'video-moderation'>('discover')
   const [selectedProfileItem, setSelectedProfileItem] = useState<MarketplaceItem | null>(null)
   const [profileReturnView, setProfileReturnView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat' | 'provider-hub' | 'provider-requests' | 'provider-request-details' | 'provider-videos' | 'provider-upload-video'>('discover')
   const [searchQuery, setSearchQuery] = useState('')
@@ -53,7 +56,8 @@ export function DiscoverPage() {
   const [bookingReturnView, setBookingReturnView] = useState<'video-viewer' | 'provider-profile'>('video-viewer')
   const [uploadVideoReturnView, setUploadVideoReturnView] = useState<'provider-hub' | 'provider-videos'>('provider-hub')
   const [reviewVideoTarget, setReviewVideoTarget] = useState<ReviewVideoItem>(DEFAULT_REVIEW_VIDEO_ITEM)
-  const [reviewVideoReturnView] = useState<'provider-hub' | 'provider-videos'>('provider-hub')
+  const [reviewVideoReturnView, setReviewVideoReturnView] = useState<'provider-hub' | 'provider-videos' | 'video-moderation'>('video-moderation')
+  const [moderationVideos, setModerationVideos] = useState<ModerationVideoItem[]>(INITIAL_MODERATION_VIDEOS)
   const [bookings, setBookings] = useState<BookingRequest[]>([])
   const [bookingsTab, setBookingsTab] = useState<'All' | 'Pending' | 'Accepted' | 'In Progress' | 'Declined' | 'Canceled' | 'Completed'>('All')
   const [activeChatBooking, setActiveChatBooking] = useState<BookingRequest | null>(null)
@@ -350,6 +354,8 @@ export function DiscoverPage() {
         setCurrentView('review-video')
       } else if (window.location.hash === '#reject-video') {
         setCurrentView('reject-video')
+      } else if (window.location.hash === '#video-moderation' || window.location.hash === '#moderation') {
+        setCurrentView('video-moderation')
       }
     }
     checkHash()
@@ -366,6 +372,11 @@ export function DiscoverPage() {
   }
 
   const handleApproveVideo = (item: ReviewVideoItem) => {
+    setModerationVideos((prev) =>
+      prev.map((v) =>
+        v.id === item.id || v.title === item.serviceName ? { ...v, status: 'approved' } : v
+      )
+    )
     showNotification(`Video for "${item.serviceName}" has been approved!`)
     handleBackFromReviewVideo()
   }
@@ -390,11 +401,26 @@ export function DiscoverPage() {
   }
 
   const handleConfirmRejectVideo = (item: ReviewVideoItem, reason: RejectionReason) => {
+    setModerationVideos((prev) =>
+      prev.map((v) =>
+        v.id === item.id || v.title === item.serviceName ? { ...v, status: 'rejected' } : v
+      )
+    )
     showNotification(`Video for "${item.serviceName}" has been rejected (${reason}).`)
     setCurrentView(reviewVideoReturnView)
     if (window.location.hash === '#reject-video' || window.location.hash === '#review-video') {
       history.pushState(null, '', window.location.pathname + window.location.search)
     }
+  }
+
+  const handleOpenReviewVideoFromModeration = (video: ModerationVideoItem) => {
+    setReviewVideoTarget({
+      id: video.id,
+      providerName: video.providerName,
+      serviceName: video.title,
+    })
+    setReviewVideoReturnView('video-moderation')
+    setCurrentView('review-video')
   }
 
   const handleBookingSubmit = (newBooking: BookingRequest) => {
@@ -685,6 +711,18 @@ export function DiscoverPage() {
             onCancel={handleCancelRejectVideo}
             onConfirmReject={handleConfirmRejectVideo}
           />
+        ) : currentView === 'video-moderation' ? (
+          <VideoModeration
+            videos={moderationVideos}
+            onBack={() => {
+              setCurrentView('provider-hub')
+              if (window.location.hash === '#video-moderation' || window.location.hash === '#moderation') {
+                history.pushState(null, '', window.location.pathname + window.location.search)
+              }
+            }}
+            onMenuClick={() => setIsDrawerOpen(true)}
+            onReviewVideo={handleOpenReviewVideoFromModeration}
+          />
         ) : currentView === 'provider-requests' ? (
           <ProviderRequests
             requests={providerRequests}
@@ -824,6 +862,7 @@ export function DiscoverPage() {
           onNavigateSearch={handleNavigateSearch}
           onNavigateBookings={handleNavigateBookings}
           onNavigateProviderHub={handleNavigateProviderHub}
+          onNavigateVideoModeration={() => setCurrentView('video-moderation')}
           onSignOut={handleSignOut}
           isProvider={
             currentUser?.role === 'provider' ||
@@ -832,9 +871,12 @@ export function DiscoverPage() {
             window.location.hash.startsWith('#request-details-') ||
             window.location.hash === '#review-video' ||
             window.location.hash === '#reject-video' ||
+            window.location.hash === '#video-moderation' ||
+            window.location.hash === '#moderation' ||
             currentView.startsWith('provider-') ||
             currentView === 'review-video' ||
-            currentView === 'reject-video'
+            currentView === 'reject-video' ||
+            currentView === 'video-moderation'
           }
           currentView={currentView}
         />

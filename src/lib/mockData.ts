@@ -494,5 +494,44 @@ export const REJECTION_REASONS: RejectionReason[] = [
   'Irrelevant Video',
 ]
 
+export type ModerationVideoStatus = 'pending' | 'approved' | 'rejected'
+
+export interface ModerationVideoItem {
+  id: string
+  title: string
+  providerName: string
+  status: ModerationVideoStatus
+  videoUrl?: string
+  thumbnailUrl?: string
+}
+
+export const INITIAL_MODERATION_VIDEOS: ModerationVideoItem[] = [
+  {
+    id: 'mod-vid-1',
+    title: 'Custom Bridal Makeup',
+    providerName: 'Ade Beauty Studio',
+    status: 'pending',
+  },
+  {
+    id: 'mod-vid-2',
+    title: 'Engagement Makeup',
+    providerName: 'Ade Beauty Studio',
+    status: 'pending',
+  },
+  {
+    id: 'mod-vid-3',
+    title: 'Skin Fade Haircut',
+    providerName: "The Gentleman's Cut",
+    status: 'approved',
+  },
+  {
+    id: 'mod-vid-4',
+    title: 'Toyota Camry Engine Repair',
+    providerName: 'Femi Auto Works',
+    status: 'rejected',
+  },
+]
+
+
 
 

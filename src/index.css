@@ -6193,3 +6193,254 @@ body {
 .reject-video-confirm-btn:active {
   transform: scale(0.99);
 }
+
+/* ==========================================================================
+   Admin Video Moderation Screen
+   ========================================================================== */
+
+.video-moderation-screen {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #111827;
+  display: flex;
+  justify-content: center;
+}
+
+.video-moderation-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #F8FAFC;
+  position: relative;
+}
+
+.video-moderation-header {
+  height: 60px;
+  background-color: #1D4ED8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.video-moderation-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.video-moderation-back-btn,
+.video-moderation-menu-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #FFFFFF;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+  padding: 0;
+}
+
+.video-moderation-back-btn:hover,
+.video-moderation-menu-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.video-moderation-back-icon {
+  width: 24px;
+  height: 24px;
+  color: #FFFFFF;
+}
+
+.video-moderation-menu-icon {
+  width: 24px;
+  height: 24px;
+  color: #FFFFFF;
+}
+
+.video-moderation-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.video-moderation-tabs-nav {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.video-moderation-tab {
+  height: 36px;
+  padding: 0 18px;
+  border-radius: 9999px;
+  background-color: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  font-size: 14px;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.video-moderation-tab:hover {
+  border-color: #94A3B8;
+  background-color: #F8FAFC;
+}
+
+.video-moderation-tab.active {
+  background-color: #1D4ED8;
+  border-color: #1D4ED8;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.video-moderation-tab.active:hover {
+  background-color: #1E40AF;
+  border-color: #1E40AF;
+}
+
+.video-moderation-content {
+  padding: 0 16px 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.video-moderation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.video-moderation-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.15s ease;
+}
+
+.video-moderation-card:hover {
+  border-color: #CBD5E1;
+}
+
+.video-moderation-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  background-color: #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.video-moderation-play-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid #64748B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.video-moderation-play-icon {
+  width: 12px;
+  height: 12px;
+  fill: #64748B;
+  color: #64748B;
+  margin-left: 2px;
+}
+
+.video-moderation-card-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.video-moderation-card-title {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0 0 2px 0;
+  letter-spacing: -0.2px;
+  line-height: 1.3;
+}
+
+.video-moderation-card-provider {
+  font-size: 13.5px;
+  color: #64748B;
+  margin: 0 0 10px 0;
+}
+
+.video-moderation-review-btn {
+  background-color: #1D4ED8;
+  color: #FFFFFF;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 18px;
+  width: fit-content;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.video-moderation-review-btn:hover {
+  background-color: #1E40AF;
+}
+
+.video-moderation-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 5px 14px;
+  width: fit-content;
+}
+
+.video-moderation-status-badge.status-approved {
+  background-color: #FFFFFF;
+  border: 1px solid #86EFAC;
+  color: #16A34A;
+}
+
+.video-moderation-status-badge.status-rejected {
+  background-color: #FFFFFF;
+  border: 1px solid #FECACA;
+  color: #EF4444;
+}
+
+.video-moderation-empty {
+  padding: 40px 16px;
+  text-align: center;
+  color: #64748B;
+  font-size: 14px;
+}
