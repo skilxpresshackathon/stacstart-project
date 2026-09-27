@@ -5941,3 +5941,255 @@ body {
   height: 18px;
   stroke-width: 2.5;
 }
+
+/* ==========================================================================
+   Admin Reject Video Screen
+   ========================================================================== */
+
+.reject-video-screen {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #111827;
+  display: flex;
+  justify-content: center;
+}
+
+.reject-video-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #FFFFFF;
+  position: relative;
+}
+
+.reject-video-header {
+  height: 60px;
+  background-color: #1D4ED8;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.reject-video-back-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #FFFFFF;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+  padding: 0;
+}
+
+.reject-video-back-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.reject-video-back-icon {
+  width: 24px;
+  height: 24px;
+  color: #FFFFFF;
+}
+
+.reject-video-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.reject-video-body {
+  padding: 32px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.reject-video-badge-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+
+.reject-video-badge {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid #EF4444;
+  background-color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reject-video-badge-icon {
+  width: 28px;
+  height: 28px;
+  color: #DC2626;
+  stroke-width: 2.5;
+}
+
+.reject-video-heading {
+  font-size: 22px;
+  font-weight: 700;
+  color: #DC2626;
+  text-align: center;
+  margin: 0 0 10px 0;
+  letter-spacing: -0.3px;
+}
+
+.reject-video-notice {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #64748B;
+  text-align: center;
+  margin: 0 auto 20px;
+  max-width: 380px;
+}
+
+.reject-video-context-box {
+  background-color: #F1F5F9;
+  border-radius: 8px;
+  padding: 11px 16px;
+  text-align: center;
+  color: #1E293B;
+  font-size: 14.5px;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.reject-video-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0 0 12px 0;
+}
+
+.reject-video-reasons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reject-video-reason-card {
+  width: 100%;
+  background-color: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.reject-video-reason-card.selected {
+  border-color: #1D4ED8;
+  background-color: #F8FAFC;
+}
+
+.reject-video-radio-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid #94A3B8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease;
+}
+
+.reject-video-radio-circle.selected {
+  border-color: #1D4ED8;
+  border-width: 2px;
+}
+
+.reject-video-radio-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #1D4ED8;
+}
+
+.reject-video-reason-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.reject-video-error-msg {
+  color: #DC2626;
+  font-size: 13px;
+  margin-top: 10px;
+  text-align: center;
+}
+
+.reject-video-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.reject-video-cancel-btn {
+  flex: 1;
+  height: 46px;
+  background-color: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0F172A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.reject-video-cancel-btn:hover {
+  background-color: #F8FAFC;
+  border-color: #94A3B8;
+}
+
+.reject-video-confirm-btn {
+  flex: 1;
+  height: 46px;
+  background-color: #FFFFFF;
+  border: 1px solid #EF4444;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #DC2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.reject-video-confirm-btn:hover {
+  background-color: #FEF2F2;
+  border-color: #B91C1C;
+}
+
+.reject-video-cancel-btn:active,
+.reject-video-confirm-btn:active {
+  transform: scale(0.99);
+}

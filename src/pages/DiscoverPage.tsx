@@ -16,10 +16,11 @@ import { ProviderRequestDetails } from '../components/provider/ProviderRequestDe
 import { ProviderVideos } from '../components/provider/ProviderVideos'
 import { ProviderUploadVideo } from '../components/provider/ProviderUploadVideo'
 import { ReviewVideo } from '../components/admin/ReviewVideo'
+import { RejectVideo } from '../components/admin/RejectVideo'
 import { SearchHeader } from '../components/search/SearchHeader'
 import { SearchResultCard } from '../components/search/SearchResultCard'
 import { FilterSheet } from '../components/search/FilterSheet'
-import { SearchIcon, ChevronLeftIcon } from '../components/common/Icons'
+import { SearchIcon } from '../components/common/Icons'
 import {
   CATEGORIES,
   MOCK_MARKETPLACE_ITEMS,
@@ -29,6 +30,7 @@ import {
   INITIAL_PROVIDER_REQUESTS,
   DEFAULT_REVIEW_VIDEO_ITEM,
   type ReviewVideoItem,
+  type RejectionReason,
 } from '../lib/mockData'
 import type { MarketplaceItem, User, BookingRequest, BookingStatus, SearchFilters, Provider } from '../types/marketplace'
 
@@ -380,6 +382,21 @@ export function DiscoverPage() {
     }
   }
 
+  const handleCancelRejectVideo = () => {
+    setCurrentView('review-video')
+    if (window.location.hash === '#reject-video') {
+      window.location.hash = '#review-video'
+    }
+  }
+
+  const handleConfirmRejectVideo = (item: ReviewVideoItem, reason: RejectionReason) => {
+    showNotification(`Video for "${item.serviceName}" has been rejected (${reason}).`)
+    setCurrentView(reviewVideoReturnView)
+    if (window.location.hash === '#reject-video' || window.location.hash === '#review-video') {
+      history.pushState(null, '', window.location.pathname + window.location.search)
+    }
+  }
+
   const handleBookingSubmit = (newBooking: BookingRequest) => {
     setBookings((prev) => [newBooking, ...prev])
     if (newBooking.provider.id === 'prov-1' || newBooking.provider.businessName === 'Ade Beauty Studio') {
@@ -662,32 +679,12 @@ export function DiscoverPage() {
             onReject={handleRejectVideo}
           />
         ) : currentView === 'reject-video' ? (
-          <div className="review-video-screen">
-            <div className="review-video-container">
-              <header className="review-video-header">
-                <button
-                  type="button"
-                  className="review-video-back-btn"
-                  onClick={handleBackFromRejectVideo}
-                  aria-label="Back to Review Video"
-                >
-                  <ChevronLeftIcon className="review-video-back-icon" />
-                </button>
-                <h1 className="review-video-title">Reject Video</h1>
-              </header>
-              <main style={{ padding: '24px', color: '#FFFFFF', flex: 1, backgroundColor: '#21252B' }}>
-                <p style={{ fontSize: '15px', color: '#E2E8F0', marginBottom: '8px' }}>
-                  Rejecting video for: <strong>{reviewVideoTarget.serviceName}</strong>
-                </p>
-                <p style={{ fontSize: '14px', color: '#94A3B8' }}>
-                  Provider: <strong>{reviewVideoTarget.providerName}</strong>
-                </p>
-                <p style={{ marginTop: '20px', fontSize: '13px', color: '#64748B', fontStyle: 'italic' }}>
-                  (Reject Video screen will be implemented in Task D)
-                </p>
-              </main>
-            </div>
-          </div>
+          <RejectVideo
+            item={reviewVideoTarget}
+            onBack={handleBackFromRejectVideo}
+            onCancel={handleCancelRejectVideo}
+            onConfirmReject={handleConfirmRejectVideo}
+          />
         ) : currentView === 'provider-requests' ? (
           <ProviderRequests
             requests={providerRequests}

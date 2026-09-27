@@ -487,4 +487,12 @@ export const DEFAULT_REVIEW_VIDEO_ITEM: ReviewVideoItem = {
   serviceName: 'Custom Bridal Makeup',
 }
 
+export type RejectionReason = 'Violates Platform Guidelines' | 'Irrelevant Video'
+
+export const REJECTION_REASONS: RejectionReason[] = [
+  'Violates Platform Guidelines',
+  'Irrelevant Video',
+]
+
+
 
