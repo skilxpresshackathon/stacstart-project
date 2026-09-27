@@ -5,6 +5,7 @@ import {
   SearchIcon,
   CalendarIcon,
   SignOutIcon,
+  DashboardGridIcon,
 } from '../common/Icons'
 
 interface NavDrawerProps {
@@ -13,7 +14,10 @@ interface NavDrawerProps {
   onNavigateHome: () => void
   onNavigateSearch: () => void
   onNavigateBookings: () => void
+  onNavigateProviderHub?: () => void
   onSignOut: () => void
+  isProvider?: boolean
+  currentView?: string
 }
 
 export function NavDrawer({
@@ -22,7 +26,10 @@ export function NavDrawer({
   onNavigateHome,
   onNavigateSearch,
   onNavigateBookings,
+  onNavigateProviderHub,
   onSignOut,
+  isProvider = false,
+  currentView,
 }: NavDrawerProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -92,6 +99,22 @@ export function NavDrawer({
             <CalendarIcon className="nav-drawer-icon" />
             <span>My Bookings</span>
           </button>
+
+          {isProvider && onNavigateProviderHub && (
+            <button
+              type="button"
+              className={`nav-drawer-item ${
+                currentView === 'provider-hub' ? 'nav-drawer-item-active' : ''
+              }`}
+              onClick={() => {
+                onNavigateProviderHub()
+                onClose()
+              }}
+            >
+              <DashboardGridIcon className="nav-drawer-icon" />
+              <span>Provider Hub</span>
+            </button>
+          )}
 
           <div className="nav-drawer-divider" />
 

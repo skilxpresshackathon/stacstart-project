@@ -10,6 +10,7 @@ import { RequestService } from '../components/booking/RequestService'
 import { BookingsView } from '../components/booking/BookingsView'
 import { ChatView, type ChatMessage } from '../components/chat/ChatView'
 import { ProviderSignupFlow } from '../components/auth/ProviderSignupFlow'
+import { ProviderHub } from '../components/provider/ProviderHub'
 import { SearchHeader } from '../components/search/SearchHeader'
 import { SearchResultCard } from '../components/search/SearchResultCard'
 import { FilterSheet } from '../components/search/FilterSheet'
@@ -25,9 +26,9 @@ import type { MarketplaceItem, User, BookingRequest, BookingStatus, SearchFilter
 
 export function DiscoverPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile' | 'chat' | 'provider-signup'>('discover')
+  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile' | 'chat' | 'provider-signup' | 'provider-hub'>('discover')
   const [selectedProfileItem, setSelectedProfileItem] = useState<MarketplaceItem | null>(null)
-  const [profileReturnView, setProfileReturnView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat'>('discover')
+  const [profileReturnView, setProfileReturnView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat' | 'provider-hub'>('discover')
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchActive, setIsSearchActive] = useState(false)
   const [searchFilters, setSearchFilters] = useState<SearchFilters>(DEFAULT_SEARCH_FILTERS)
@@ -96,6 +97,18 @@ export function DiscoverPage() {
     if (searchFilters.minBudget > 0 || searchFilters.maxBudget < 200000) count++
     return count
   }, [searchFilters])
+
+  // Provider Hub booking statistics derived from real bookings
+  const providerBookingStats = useMemo(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#provider-hub-active') {
+      return { pending: 2, inProgress: 1, completed: 6, declined: 1 }
+    }
+    const pending = bookings.filter((b) => b.status === 'pending').length
+    const inProgress = bookings.filter((b) => b.status === 'in_progress').length
+    const completed = bookings.filter((b) => b.status === 'completed').length
+    const declined = bookings.filter((b) => b.status === 'declined').length
+    return { pending, inProgress, completed, declined }
+  }, [bookings])
 
   // Search Activity results (combining query, location, category, budget)
   const searchResults = useMemo(() => {
@@ -293,6 +306,8 @@ export function DiscoverPage() {
       } else if (window.location.hash === '#chat-completed') {
         setActiveChatBooking(createDemoBooking('completed'))
         setCurrentView('chat')
+      } else if (window.location.hash === '#provider-hub' || window.location.hash === '#provider-hub-new' || window.location.hash === '#provider-hub-active') {
+        setCurrentView('provider-hub')
       }
     }
     checkHash()
@@ -391,6 +406,12 @@ export function DiscoverPage() {
     setCurrentView('bookings')
   }
 
+  const handleNavigateProviderHub = () => {
+    setSelectedDetailItem(null)
+    setBookingTargetItem(null)
+    setCurrentView('provider-hub')
+  }
+
   return (
     <div className="discover-screen">
       <div className="screen-container">
@@ -437,7 +458,7 @@ export function DiscoverPage() {
             onClose={() => setCurrentView('discover')}
             onSuccess={(newProviderUser) => {
               setCurrentUser(newProviderUser)
-              setCurrentView('discover')
+              setCurrentView('provider-hub')
               showNotification(
                 'Provider account created! Verification documents submitted for review.'
               )
@@ -454,6 +475,48 @@ export function DiscoverPage() {
             onProviderClick={handleProviderClickFromChat}
             messages={chatMessagesMap[activeChatBooking.id]}
             onSendMessage={(text) => handleSendMessageInChat(activeChatBooking.id, text)}
+          />
+        ) : currentView === 'provider-hub' ? (
+          <ProviderHub
+            user={currentUser}
+            isVerified={
+              window.location.hash === '#provider-hub-active'
+                ? true
+                : window.location.hash === '#provider-hub-new'
+                ? false
+                : (currentUser?.role === 'provider' && bookings.length > 0)
+            }
+            isNewProvider={
+              window.location.hash === '#provider-hub-new'
+                ? true
+                : window.location.hash === '#provider-hub-active'
+                ? false
+                : (currentUser?.role === 'provider' && bookings.length === 0)
+            }
+            bookingStats={
+              window.location.hash === '#provider-hub-active'
+                ? { pending: 2, inProgress: 1, completed: 6, declined: 1 }
+                : providerBookingStats
+            }
+            onMenuClick={() => setIsDrawerOpen(true)}
+            onUploadVideo={() =>
+              showNotification('Video upload flow will be available in the next update.')
+            }
+            onViewRequests={() => {
+              setCurrentView('bookings')
+              showNotification('Navigating to client requests.')
+            }}
+            onManageVideos={() =>
+              showNotification('Video management will be available in the next update.')
+            }
+            onCustomerReviews={() =>
+              showNotification('Customer reviews will be available in the next update.')
+            }
+            onViewProfile={() => {
+              setSelectedProfileItem(MOCK_MARKETPLACE_ITEMS[0])
+              setProfileReturnView('provider-hub')
+              setCurrentView('provider-profile')
+            }}
           />
         ) : currentView === 'bookings' ? (
           <BookingsView
@@ -571,7 +634,10 @@ export function DiscoverPage() {
           onNavigateHome={handleNavigateHome}
           onNavigateSearch={handleNavigateSearch}
           onNavigateBookings={handleNavigateBookings}
+          onNavigateProviderHub={handleNavigateProviderHub}
           onSignOut={handleSignOut}
+          isProvider={currentUser?.role === 'provider' || window.location.hash.startsWith('#provider-hub')}
+          currentView={currentView}
         />
 
         {/* Filter Sheet Modal */}
