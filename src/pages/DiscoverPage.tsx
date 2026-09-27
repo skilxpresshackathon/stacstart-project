@@ -10,6 +10,7 @@ import { ProviderProfile } from '../components/marketplace/ProviderProfile'
 import { RequestService } from '../components/booking/RequestService'
 import { BookingsView } from '../components/booking/BookingsView'
 import { ChatView, type ChatMessage } from '../components/chat/ChatView'
+import { ProviderSignupFlow } from '../components/auth/ProviderSignupFlow'
 import { SearchHeader } from '../components/search/SearchHeader'
 import { SearchResultCard } from '../components/search/SearchResultCard'
 import { FilterSheet } from '../components/search/FilterSheet'
@@ -25,7 +26,7 @@ import type { MarketplaceItem, User, BookingRequest, BookingStatus, SearchFilter
 
 export function DiscoverPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile' | 'chat'>('discover')
+  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile' | 'chat' | 'provider-signup'>('discover')
   const [selectedProfileItem, setSelectedProfileItem] = useState<MarketplaceItem | null>(null)
   const [profileReturnView, setProfileReturnView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat'>('discover')
   const [searchQuery, setSearchQuery] = useState('')
@@ -442,6 +443,22 @@ export function DiscoverPage() {
             onSubmitBooking={handleBookingSubmit}
             onProviderClick={() => handleOpenProviderProfile(bookingTargetItem, 'request-service')}
           />
+        ) : currentView === 'provider-signup' ? (
+          <ProviderSignupFlow
+            isOpen={true}
+            onClose={() => setCurrentView('discover')}
+            onSuccess={(newProviderUser) => {
+              setCurrentUser(newProviderUser)
+              setCurrentView('discover')
+              showNotification(
+                'Provider account created! Verification documents submitted for review.'
+              )
+            }}
+            onSwitchToSignIn={() => {
+              setCurrentView('discover')
+              setAuthModal({ isOpen: true, mode: 'login' })
+            }}
+          />
         ) : currentView === 'chat' && activeChatBooking ? (
           <ChatView
             booking={activeChatBooking}
@@ -600,7 +617,7 @@ export function DiscoverPage() {
           onAuthSuccess={handleAuthSuccess}
           onProviderSignupClick={() => {
             setAuthModal({ isOpen: false, mode: 'login' })
-            showNotification('Provider onboarding will be available in subsequent Build Week tasks.')
+            setCurrentView('provider-signup')
           }}
         />
       </div>
