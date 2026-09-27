@@ -13,6 +13,8 @@ import { ProviderSignupFlow } from '../components/auth/ProviderSignupFlow'
 import { ProviderHub } from '../components/provider/ProviderHub'
 import { ProviderRequests } from '../components/provider/ProviderRequests'
 import { ProviderRequestDetails } from '../components/provider/ProviderRequestDetails'
+import { ProviderVideos } from '../components/provider/ProviderVideos'
+import { ProviderUploadVideo } from '../components/provider/ProviderUploadVideo'
 import { SearchHeader } from '../components/search/SearchHeader'
 import { SearchResultCard } from '../components/search/SearchResultCard'
 import { FilterSheet } from '../components/search/FilterSheet'
@@ -29,9 +31,9 @@ import type { MarketplaceItem, User, BookingRequest, BookingStatus, SearchFilter
 
 export function DiscoverPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile' | 'chat' | 'provider-signup' | 'provider-hub' | 'provider-requests' | 'provider-request-details'>('discover')
+  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile' | 'chat' | 'provider-signup' | 'provider-hub' | 'provider-requests' | 'provider-request-details' | 'provider-videos' | 'provider-upload-video'>('discover')
   const [selectedProfileItem, setSelectedProfileItem] = useState<MarketplaceItem | null>(null)
-  const [profileReturnView, setProfileReturnView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat' | 'provider-hub' | 'provider-requests' | 'provider-request-details'>('discover')
+  const [profileReturnView, setProfileReturnView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat' | 'provider-hub' | 'provider-requests' | 'provider-request-details' | 'provider-videos' | 'provider-upload-video'>('discover')
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchActive, setIsSearchActive] = useState(false)
   const [searchFilters, setSearchFilters] = useState<SearchFilters>(DEFAULT_SEARCH_FILTERS)
@@ -580,15 +582,15 @@ export function DiscoverPage() {
             }
             bookingStats={providerBookingStats}
             onMenuClick={() => setIsDrawerOpen(true)}
-            onUploadVideo={() =>
-              showNotification('Video upload flow will be available in the next update.')
-            }
+            onUploadVideo={() => {
+              setCurrentView('provider-upload-video')
+            }}
             onViewRequests={() => {
               setCurrentView('provider-requests')
             }}
-            onManageVideos={() =>
-              showNotification('Video management will be available in the next update.')
-            }
+            onManageVideos={() => {
+              setCurrentView('provider-videos')
+            }}
             onCustomerReviews={() =>
               showNotification('Customer reviews will be available in the next update.')
             }
@@ -596,6 +598,23 @@ export function DiscoverPage() {
               setSelectedProfileItem(MOCK_MARKETPLACE_ITEMS[0])
               setProfileReturnView('provider-hub')
               setCurrentView('provider-profile')
+            }}
+          />
+        ) : currentView === 'provider-videos' ? (
+          <ProviderVideos
+            onBack={() => setCurrentView('provider-hub')}
+            onMenuClick={() => setIsDrawerOpen(true)}
+            onUploadVideo={() => {
+              setCurrentView('provider-upload-video')
+            }}
+          />
+        ) : currentView === 'provider-upload-video' ? (
+          <ProviderUploadVideo
+            onBack={() => setCurrentView('provider-hub')}
+            onMenuClick={() => setIsDrawerOpen(true)}
+            onSubmitSuccess={() => {
+              setCurrentView('provider-hub')
+              showNotification('Video saved successfully!')
             }}
           />
         ) : currentView === 'provider-requests' ? (
@@ -742,7 +761,8 @@ export function DiscoverPage() {
             currentUser?.role === 'provider' ||
             window.location.hash.startsWith('#provider-') ||
             window.location.hash === '#client-requests' ||
-            window.location.hash.startsWith('#request-details-')
+            window.location.hash.startsWith('#request-details-') ||
+            currentView.startsWith('provider-')
           }
           currentView={currentView}
         />
