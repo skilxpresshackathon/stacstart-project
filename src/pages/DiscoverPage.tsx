@@ -43,6 +43,7 @@ export function DiscoverPage() {
   })
   const [selectedDetailItem, setSelectedDetailItem] = useState<MarketplaceItem | null>(null)
   const [bookingTargetItem, setBookingTargetItem] = useState<MarketplaceItem | null>(null)
+  const [bookingReturnView, setBookingReturnView] = useState<'video-viewer' | 'provider-profile'>('video-viewer')
   const [bookings, setBookings] = useState<BookingRequest[]>([])
   const [bookingsTab, setBookingsTab] = useState<'All' | 'Pending' | 'Accepted' | 'In Progress' | 'Declined' | 'Canceled' | 'Completed'>('All')
   const [activeChatBooking, setActiveChatBooking] = useState<BookingRequest | null>(null)
@@ -225,6 +226,8 @@ export function DiscoverPage() {
 
   const handleRequestServiceFromVideoViewer = (item: MarketplaceItem) => {
     setBookingTargetItem(item)
+    setSelectedDetailItem(item)
+    setBookingReturnView('video-viewer')
     if (!currentUser) {
       setAuthModal({ isOpen: true, mode: 'login' })
     } else {
@@ -233,7 +236,14 @@ export function DiscoverPage() {
   }
 
   const handleBackFromRequestService = () => {
-    setCurrentView('video-viewer')
+    if (bookingReturnView === 'provider-profile') {
+      if (!selectedProfileItem && bookingTargetItem) {
+        setSelectedProfileItem(bookingTargetItem)
+      }
+      setCurrentView('provider-profile')
+    } else {
+      setCurrentView('video-viewer')
+    }
   }
 
   const handleOpenProviderProfile = (
@@ -280,6 +290,8 @@ export function DiscoverPage() {
 
   const handleRequestServiceFromProviderProfile = (item: MarketplaceItem) => {
     setBookingTargetItem(item)
+    setSelectedProfileItem(item)
+    setBookingReturnView('provider-profile')
     if (!currentUser) {
       setAuthModal({ isOpen: true, mode: 'login' })
     } else {
