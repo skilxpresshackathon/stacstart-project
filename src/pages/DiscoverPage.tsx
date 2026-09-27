@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { Header } from '../components/marketplace/Header'
 import { SearchBar } from '../components/marketplace/SearchBar'
-import { CategoryFilter } from '../components/marketplace/CategoryFilter'
 import { ProviderCardList } from '../components/marketplace/ProviderCardList'
 import { NavDrawer } from '../components/navigation/NavDrawer'
 import { AuthModal, type AuthMode } from '../components/auth/AuthModal'
@@ -30,7 +29,6 @@ export function DiscoverPage() {
   const [selectedProfileItem, setSelectedProfileItem] = useState<MarketplaceItem | null>(null)
   const [profileReturnView, setProfileReturnView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat'>('discover')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('All')
   const [isSearchActive, setIsSearchActive] = useState(false)
   const [searchFilters, setSearchFilters] = useState<SearchFilters>(DEFAULT_SEARCH_FILTERS)
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
@@ -98,16 +96,6 @@ export function DiscoverPage() {
     if (searchFilters.minBudget > 0 || searchFilters.maxBudget < 200000) count++
     return count
   }, [searchFilters])
-
-  // Discover feed items (standard portrait card browsing)
-  const discoverItems = useMemo(() => {
-    return MOCK_MARKETPLACE_ITEMS.filter((item) => {
-      if (selectedCategory !== 'All' && item.provider.category !== selectedCategory) {
-        return false
-      }
-      return true
-    })
-  }, [selectedCategory])
 
   // Search Activity results (combining query, location, category, budget)
   const searchResults = useMemo(() => {
@@ -562,15 +550,10 @@ export function DiscoverPage() {
                   onFocus={() => setIsSearchActive(true)}
                   onClick={() => setIsSearchActive(true)}
                 />
-                <CategoryFilter
-                  categories={CATEGORIES}
-                  selectedCategory={selectedCategory}
-                  onSelectCategory={setSelectedCategory}
-                />
               </div>
               <main className="marketplace-content">
                 <ProviderCardList
-                  items={discoverItems}
+                  items={MOCK_MARKETPLACE_ITEMS}
                   onItemClick={handleCardClick}
                   onProviderClick={(targetItem) =>
                     handleOpenProviderProfile(targetItem, 'discover')
