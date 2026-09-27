@@ -532,6 +532,17 @@ export const INITIAL_MODERATION_VIDEOS: ModerationVideoItem[] = [
   },
 ]
 
+export interface AdminPlatformMetrics {
+  totalUsers: number
+  verifiedUsers: number
+}
+
+export const DEFAULT_ADMIN_METRICS: AdminPlatformMetrics = {
+  totalUsers: 1250,
+  verifiedUsers: 840,
+}
+
+
 
 
 

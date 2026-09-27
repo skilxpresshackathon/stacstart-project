@@ -6444,3 +6444,230 @@ body {
   color: #64748B;
   font-size: 14px;
 }
+
+/* ==========================================================================
+   ADMIN DASHBOARD (Task F)
+   ========================================================================== */
+
+.admin-dashboard-screen {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  background-color: #F8FAFC;
+}
+
+.admin-dashboard-container {
+  width: 100%;
+  max-width: 640px;
+  min-height: 100vh;
+  background-color: #F8FAFC;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-dashboard-header {
+  height: 64px;
+  background-color: #1D4ED8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.admin-dashboard-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-dashboard-badge {
+  width: 32px;
+  height: 32px;
+  background-color: #FFFFFF;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.admin-dashboard-badge-icon {
+  width: 18px;
+  height: 18px;
+  color: #1D4ED8;
+}
+
+.admin-dashboard-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.admin-dashboard-menu-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #FFFFFF;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+  padding: 0;
+}
+
+.admin-dashboard-menu-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.admin-dashboard-menu-icon {
+  width: 24px;
+  height: 24px;
+  color: #FFFFFF;
+}
+
+.admin-dashboard-content {
+  padding: 20px 16px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.admin-dashboard-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-section-heading {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748B;
+  letter-spacing: 0.5px;
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+}
+
+.admin-metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.admin-metric-card {
+  border-radius: 12px;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.admin-metric-card.metric-total-users {
+  background-color: #EEF2FF;
+  border: 1px solid #C7D2FE;
+}
+
+.admin-metric-card.metric-total-users .admin-metric-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #4F46E5;
+  letter-spacing: 0.4px;
+}
+
+.admin-metric-card.metric-total-users .admin-metric-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #3730A3;
+  margin-top: 6px;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.admin-metric-card.metric-verified-users {
+  background-color: #ECFDF5;
+  border: 1px solid #A7F3D0;
+}
+
+.admin-metric-card.metric-verified-users .admin-metric-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #059669;
+  letter-spacing: 0.4px;
+}
+
+.admin-metric-card.metric-verified-users .admin-metric-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #065F46;
+  margin-top: 6px;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.admin-action-card {
+  background-color: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 14px;
+  padding: 20px 18px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.admin-card-title {
+  font-size: 17.5px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0 0 10px 0;
+  letter-spacing: -0.2px;
+}
+
+.admin-card-desc {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #475569;
+  margin: 0 0 18px 0;
+}
+
+.admin-action-btn {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-action-btn:active {
+  transform: scale(0.99);
+}
+
+.admin-review-videos-btn {
+  border: 1px solid #1D4ED8;
+  color: #1D4ED8;
+}
+
+.admin-review-videos-btn:hover {
+  background-color: #EFF6FF;
+  border-color: #1E40AF;
+}
+
+.admin-review-id-btn {
+  border: 1px solid #F59E0B;
+  color: #D97706;
+}
+
+.admin-review-id-btn:hover {
+  background-color: #FFFBEB;
+  border-color: #B45309;
+}

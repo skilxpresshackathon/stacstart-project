@@ -17,6 +17,7 @@ interface NavDrawerProps {
   onNavigateBookings: () => void
   onNavigateProviderHub?: () => void
   onNavigateVideoModeration?: () => void
+  onNavigateAdminDashboard?: () => void
   onSignOut: () => void
   isProvider?: boolean
   currentView?: string
@@ -30,6 +31,7 @@ export function NavDrawer({
   onNavigateBookings,
   onNavigateProviderHub,
   onNavigateVideoModeration,
+  onNavigateAdminDashboard,
   onSignOut,
   isProvider = false,
   currentView,
@@ -132,6 +134,22 @@ export function NavDrawer({
             >
               <VideoCameraIcon className="nav-drawer-icon" />
               <span>Video Moderation</span>
+            </button>
+          )}
+
+          {isProvider && onNavigateAdminDashboard && (
+            <button
+              type="button"
+              className={`nav-drawer-item ${
+                currentView === 'admin-dashboard' ? 'nav-drawer-item-active' : ''
+              }`}
+              onClick={() => {
+                onNavigateAdminDashboard()
+                onClose()
+              }}
+            >
+              <DashboardGridIcon className="nav-drawer-icon" />
+              <span>Admin Dashboard</span>
             </button>
           )}
 
