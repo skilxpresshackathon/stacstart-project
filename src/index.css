@@ -5270,6 +5270,173 @@ body {
   stroke-width: 2;
 }
 
+/* Provider Videos Filled State (Tabs, Grid, Badges, Play Button) */
+.manage-videos-tabs {
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #E5E7EB;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.manage-videos-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.manage-videos-tab {
+  padding: 6px 16px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  background-color: #FFFFFF;
+  color: #374151;
+  border: 1px solid #E2E8F0;
+}
+
+.manage-videos-tab:hover {
+  background-color: #F8FAFC;
+  border-color: #CBD5E1;
+}
+
+.manage-videos-tab.active {
+  background-color: #1D4ED8;
+  color: #FFFFFF;
+  border-color: #1D4ED8;
+  font-weight: 600;
+}
+
+.manage-videos-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.manage-videos-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.manage-video-card {
+  aspect-ratio: 3 / 4;
+  min-height: 200px;
+  border-radius: 14px;
+  background-color: #E2E8F0;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.manage-video-card-top {
+  display: flex;
+  align-items: flex-start;
+  z-index: 2;
+}
+
+.manage-video-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+}
+
+.manage-video-status.status-approved {
+  color: #16A34A;
+}
+
+.manage-video-status.status-under-review {
+  color: #D97706;
+}
+
+.manage-video-status.status-rejected {
+  color: #DC2626;
+}
+
+.status-badge-icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.5;
+}
+
+.manage-video-play-wrap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.manage-video-play-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid #4B5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(1px);
+}
+
+.manage-video-play-icon {
+  width: 16px;
+  height: 16px;
+  color: #1F2937;
+  margin-left: 2px;
+}
+
+.manage-video-card-bottom {
+  display: flex;
+  align-items: flex-end;
+  z-index: 2;
+}
+
+.manage-video-title-pill {
+  background-color: rgba(55, 65, 81, 0.85);
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  backdrop-filter: blur(2px);
+}
+
+.manage-videos-empty-filter {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  color: #64748B;
+  font-size: 15px;
+  text-align: center;
+}
+
+.manage-videos-bottom-action {
+  margin-top: 20px;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
 /* ==========================================================================
    Provider Upload Video Screen
    ========================================================================== */

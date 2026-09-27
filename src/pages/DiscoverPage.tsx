@@ -46,6 +46,7 @@ export function DiscoverPage() {
   const [selectedDetailItem, setSelectedDetailItem] = useState<MarketplaceItem | null>(null)
   const [bookingTargetItem, setBookingTargetItem] = useState<MarketplaceItem | null>(null)
   const [bookingReturnView, setBookingReturnView] = useState<'video-viewer' | 'provider-profile'>('video-viewer')
+  const [uploadVideoReturnView, setUploadVideoReturnView] = useState<'provider-hub' | 'provider-videos'>('provider-hub')
   const [bookings, setBookings] = useState<BookingRequest[]>([])
   const [bookingsTab, setBookingsTab] = useState<'All' | 'Pending' | 'Accepted' | 'In Progress' | 'Declined' | 'Canceled' | 'Completed'>('All')
   const [activeChatBooking, setActiveChatBooking] = useState<BookingRequest | null>(null)
@@ -583,6 +584,7 @@ export function DiscoverPage() {
             bookingStats={providerBookingStats}
             onMenuClick={() => setIsDrawerOpen(true)}
             onUploadVideo={() => {
+              setUploadVideoReturnView('provider-hub')
               setCurrentView('provider-upload-video')
             }}
             onViewRequests={() => {
@@ -605,12 +607,13 @@ export function DiscoverPage() {
             onBack={() => setCurrentView('provider-hub')}
             onMenuClick={() => setIsDrawerOpen(true)}
             onUploadVideo={() => {
+              setUploadVideoReturnView('provider-videos')
               setCurrentView('provider-upload-video')
             }}
           />
         ) : currentView === 'provider-upload-video' ? (
           <ProviderUploadVideo
-            onBack={() => setCurrentView('provider-hub')}
+            onBack={() => setCurrentView(uploadVideoReturnView)}
             onMenuClick={() => setIsDrawerOpen(true)}
             onSubmitSuccess={() => {
               setCurrentView('provider-hub')

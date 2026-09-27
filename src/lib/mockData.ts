@@ -441,3 +441,35 @@ export const INITIAL_PROVIDER_REQUESTS: BookingRequest[] = [
   },
 ]
 
+export type ProviderVideoStatus = 'approved' | 'under_review' | 'rejected'
+
+export interface ProviderVideoItem {
+  id: string
+  title: string
+  status: ProviderVideoStatus
+  thumbnailUrl?: string
+}
+
+export const INITIAL_PROVIDER_VIDEOS: ProviderVideoItem[] = [
+  {
+    id: 'pvid-1',
+    title: 'Custom Bridal Makeup',
+    status: 'approved',
+  },
+  {
+    id: 'pvid-2',
+    title: 'Engagement Makeup',
+    status: 'approved',
+  },
+  {
+    id: 'pvid-3',
+    title: 'Soft Glam Look',
+    status: 'under_review',
+  },
+  {
+    id: 'pvid-4',
+    title: 'Rushed Clip',
+    status: 'rejected',
+  },
+]
+
