@@ -11,6 +11,8 @@ import { BookingsView } from '../components/booking/BookingsView'
 import { ChatView, type ChatMessage } from '../components/chat/ChatView'
 import { ProviderSignupFlow } from '../components/auth/ProviderSignupFlow'
 import { ProviderHub } from '../components/provider/ProviderHub'
+import { ProviderRequests } from '../components/provider/ProviderRequests'
+import { ProviderRequestDetails } from '../components/provider/ProviderRequestDetails'
 import { SearchHeader } from '../components/search/SearchHeader'
 import { SearchResultCard } from '../components/search/SearchResultCard'
 import { FilterSheet } from '../components/search/FilterSheet'
@@ -21,14 +23,15 @@ import {
   LOCATIONS,
   DEFAULT_SEARCH_FILTERS,
   parsePriceRange,
+  INITIAL_PROVIDER_REQUESTS,
 } from '../lib/mockData'
 import type { MarketplaceItem, User, BookingRequest, BookingStatus, SearchFilters, Provider } from '../types/marketplace'
 
 export function DiscoverPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile' | 'chat' | 'provider-signup' | 'provider-hub'>('discover')
+  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile' | 'chat' | 'provider-signup' | 'provider-hub' | 'provider-requests' | 'provider-request-details'>('discover')
   const [selectedProfileItem, setSelectedProfileItem] = useState<MarketplaceItem | null>(null)
-  const [profileReturnView, setProfileReturnView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat' | 'provider-hub'>('discover')
+  const [profileReturnView, setProfileReturnView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat' | 'provider-hub' | 'provider-requests' | 'provider-request-details'>('discover')
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchActive, setIsSearchActive] = useState(false)
   const [searchFilters, setSearchFilters] = useState<SearchFilters>(DEFAULT_SEARCH_FILTERS)
@@ -43,6 +46,8 @@ export function DiscoverPage() {
   const [bookings, setBookings] = useState<BookingRequest[]>([])
   const [bookingsTab, setBookingsTab] = useState<'All' | 'Pending' | 'Accepted' | 'In Progress' | 'Declined' | 'Canceled' | 'Completed'>('All')
   const [activeChatBooking, setActiveChatBooking] = useState<BookingRequest | null>(null)
+  const [providerRequests, setProviderRequests] = useState<BookingRequest[]>(INITIAL_PROVIDER_REQUESTS)
+  const [activeProviderRequest, setActiveProviderRequest] = useState<BookingRequest | null>(null)
   const [chatMessagesMap, setChatMessagesMap] = useState<Record<string, ChatMessage[]>>({})
   const [notification, setNotification] = useState<string | null>(null)
 
@@ -98,17 +103,14 @@ export function DiscoverPage() {
     return count
   }, [searchFilters])
 
-  // Provider Hub booking statistics derived from real bookings
+  // Provider Hub booking statistics derived from real provider requests
   const providerBookingStats = useMemo(() => {
-    if (typeof window !== 'undefined' && window.location.hash === '#provider-hub-active') {
-      return { pending: 2, inProgress: 1, completed: 6, declined: 1 }
-    }
-    const pending = bookings.filter((b) => b.status === 'pending').length
-    const inProgress = bookings.filter((b) => b.status === 'in_progress').length
-    const completed = bookings.filter((b) => b.status === 'completed').length
-    const declined = bookings.filter((b) => b.status === 'declined').length
+    const pending = providerRequests.filter((b) => b.status === 'pending').length
+    const inProgress = providerRequests.filter((b) => b.status === 'in_progress').length
+    const completed = providerRequests.filter((b) => b.status === 'completed').length
+    const declined = providerRequests.filter((b) => b.status === 'declined').length
     return { pending, inProgress, completed, declined }
-  }, [bookings])
+  }, [providerRequests])
 
   // Search Activity results (combining query, location, category, budget)
   const searchResults = useMemo(() => {
@@ -308,6 +310,20 @@ export function DiscoverPage() {
         setCurrentView('chat')
       } else if (window.location.hash === '#provider-hub' || window.location.hash === '#provider-hub-new' || window.location.hash === '#provider-hub-active') {
         setCurrentView('provider-hub')
+      } else if (window.location.hash === '#client-requests') {
+        setCurrentView('provider-requests')
+      } else if (window.location.hash === '#request-details-pending') {
+        setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[0])
+        setCurrentView('provider-request-details')
+      } else if (window.location.hash === '#request-details-inprogress') {
+        setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[2])
+        setCurrentView('provider-request-details')
+      } else if (window.location.hash === '#request-details-completed') {
+        setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[3])
+        setCurrentView('provider-request-details')
+      } else if (window.location.hash === '#request-details-declined') {
+        setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[9])
+        setCurrentView('provider-request-details')
       }
     }
     checkHash()
@@ -317,6 +333,9 @@ export function DiscoverPage() {
 
   const handleBookingSubmit = (newBooking: BookingRequest) => {
     setBookings((prev) => [newBooking, ...prev])
+    if (newBooking.provider.id === 'prov-1' || newBooking.provider.businessName === 'Ade Beauty Studio') {
+      setProviderRequests((prev) => [newBooking, ...prev])
+    }
     setBookingTargetItem(null)
     setSelectedDetailItem(null)
     setCurrentView('bookings')
@@ -337,7 +356,11 @@ export function DiscoverPage() {
     }
   }
 
-  const handleSendMessageInChat = (bookingId: string, text: string) => {
+  const handleSendMessageInChat = (
+    bookingId: string,
+    text: string,
+    sender: 'customer' | 'provider' = 'customer'
+  ) => {
     const now = new Date()
     const timeStr = now
       .toLocaleTimeString('en-US', {
@@ -349,7 +372,7 @@ export function DiscoverPage() {
 
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
-      sender: 'customer',
+      sender,
       text,
       timestamp: timeStr,
       dateLabel: 'Today',
@@ -410,6 +433,56 @@ export function DiscoverPage() {
     setSelectedDetailItem(null)
     setBookingTargetItem(null)
     setCurrentView('provider-hub')
+  }
+
+  // Provider Request Action Handlers
+  const handleAcceptProviderRequest = (request: BookingRequest) => {
+    setProviderRequests((prev) =>
+      prev.map((r) => (r.id === request.id ? { ...r, status: 'in_progress' } : r))
+    )
+    setBookings((prev) =>
+      prev.map((r) => (r.id === request.id ? { ...r, status: 'in_progress' } : r))
+    )
+    setActiveProviderRequest((prev) =>
+      prev && prev.id === request.id ? { ...prev, status: 'in_progress' } : prev
+    )
+    showNotification(`Accepted request from ${request.customerName}. Status: In Progress.`)
+  }
+
+  const handleDeclineProviderRequest = (request: BookingRequest) => {
+    setProviderRequests((prev) =>
+      prev.map((r) => (r.id === request.id ? { ...r, status: 'declined' } : r))
+    )
+    setBookings((prev) =>
+      prev.map((r) => (r.id === request.id ? { ...r, status: 'declined' } : r))
+    )
+    setActiveProviderRequest((prev) =>
+      prev && prev.id === request.id ? { ...prev, status: 'declined' } : prev
+    )
+    showNotification(`Declined request from ${request.customerName}.`)
+  }
+
+  const handleMarkCompleteProviderRequest = (request: BookingRequest) => {
+    setProviderRequests((prev) =>
+      prev.map((r) => (r.id === request.id ? { ...r, status: 'completed' } : r))
+    )
+    setBookings((prev) =>
+      prev.map((r) => (r.id === request.id ? { ...r, status: 'completed' } : r))
+    )
+    setActiveProviderRequest((prev) =>
+      prev && prev.id === request.id ? { ...prev, status: 'completed' } : prev
+    )
+    showNotification(`Marked request from ${request.customerName} as complete!`)
+  }
+
+  const handleDeleteProviderRequest = (requestId: string) => {
+    setProviderRequests((prev) => prev.filter((r) => r.id !== requestId))
+    showNotification('Request removed.')
+  }
+
+  const handleOpenProviderRequestDetails = (request: BookingRequest) => {
+    setActiveProviderRequest(request)
+    setCurrentView('provider-request-details')
   }
 
   return (
@@ -493,18 +566,13 @@ export function DiscoverPage() {
                 ? false
                 : (currentUser?.role === 'provider' && bookings.length === 0)
             }
-            bookingStats={
-              window.location.hash === '#provider-hub-active'
-                ? { pending: 2, inProgress: 1, completed: 6, declined: 1 }
-                : providerBookingStats
-            }
+            bookingStats={providerBookingStats}
             onMenuClick={() => setIsDrawerOpen(true)}
             onUploadVideo={() =>
               showNotification('Video upload flow will be available in the next update.')
             }
             onViewRequests={() => {
-              setCurrentView('bookings')
-              showNotification('Navigating to client requests.')
+              setCurrentView('provider-requests')
             }}
             onManageVideos={() =>
               showNotification('Video management will be available in the next update.')
@@ -517,6 +585,28 @@ export function DiscoverPage() {
               setProfileReturnView('provider-hub')
               setCurrentView('provider-profile')
             }}
+          />
+        ) : currentView === 'provider-requests' ? (
+          <ProviderRequests
+            requests={providerRequests}
+            onBack={() => setCurrentView('provider-hub')}
+            onMenuClick={() => setIsDrawerOpen(true)}
+            onOpenDetails={handleOpenProviderRequestDetails}
+            onAcceptRequest={handleAcceptProviderRequest}
+            onDeclineRequest={handleDeclineProviderRequest}
+            onMarkCompleteRequest={handleMarkCompleteProviderRequest}
+            onDeleteRequest={handleDeleteProviderRequest}
+            onViewRating={(req) => showNotification(`Rating for ${req.service.name}: 5.0 ★`)}
+          />
+        ) : currentView === 'provider-request-details' && activeProviderRequest ? (
+          <ProviderRequestDetails
+            request={activeProviderRequest}
+            onBack={() => setCurrentView('provider-requests')}
+            onAccept={handleAcceptProviderRequest}
+            onDecline={handleDeclineProviderRequest}
+            onMarkComplete={handleMarkCompleteProviderRequest}
+            messages={chatMessagesMap[activeProviderRequest.id]}
+            onSendMessage={(text) => handleSendMessageInChat(activeProviderRequest.id, text, 'provider')}
           />
         ) : currentView === 'bookings' ? (
           <BookingsView
@@ -636,7 +726,12 @@ export function DiscoverPage() {
           onNavigateBookings={handleNavigateBookings}
           onNavigateProviderHub={handleNavigateProviderHub}
           onSignOut={handleSignOut}
-          isProvider={currentUser?.role === 'provider' || window.location.hash.startsWith('#provider-hub')}
+          isProvider={
+            currentUser?.role === 'provider' ||
+            window.location.hash.startsWith('#provider-') ||
+            window.location.hash === '#client-requests' ||
+            window.location.hash.startsWith('#request-details-')
+          }
           currentView={currentView}
         />
 
