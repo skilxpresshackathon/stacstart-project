@@ -473,3 +473,18 @@ export const INITIAL_PROVIDER_VIDEOS: ProviderVideoItem[] = [
   },
 ]
 
+export interface ReviewVideoItem {
+  id: string
+  providerName: string
+  serviceName: string
+  videoUrl?: string
+  thumbnailUrl?: string
+}
+
+export const DEFAULT_REVIEW_VIDEO_ITEM: ReviewVideoItem = {
+  id: 'rev-vid-1',
+  providerName: 'Ade Beauty Studio',
+  serviceName: 'Custom Bridal Makeup',
+}
+
+

@@ -5730,3 +5730,214 @@ body {
   color: #FFFFFF;
   stroke-width: 2;
 }
+
+/* ==========================================================================
+   Admin Review Video Screen
+   ========================================================================== */
+
+.review-video-screen {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #111827;
+  display: flex;
+  justify-content: center;
+}
+
+.review-video-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #1E2229;
+  position: relative;
+}
+
+.review-video-header {
+  height: 60px;
+  background-color: #1D4ED8;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.review-video-back-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #FFFFFF;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+  padding: 0;
+}
+
+.review-video-back-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.review-video-back-icon {
+  width: 24px;
+  height: 24px;
+  color: #FFFFFF;
+}
+
+.review-video-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.review-video-preview-area {
+  flex: 1;
+  min-height: 360px;
+  background-color: #21252B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.review-video-play-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.review-video-play-btn {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.review-video-play-btn:hover {
+  transform: scale(1.05);
+  background-color: rgba(0, 0, 0, 0.4);
+  border-color: #FFFFFF;
+}
+
+.review-video-play-icon {
+  width: 24px;
+  height: 24px;
+  color: #FFFFFF;
+  fill: #FFFFFF;
+  margin-left: 3px;
+}
+
+.review-video-bottom-panel {
+  background-color: #FFFFFF;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 12px 16px 28px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
+  z-index: 10;
+}
+
+.review-video-drag-handle {
+  width: 40px;
+  height: 4px;
+  background-color: #94A3B8;
+  border-radius: 9999px;
+  margin: 2px auto 14px;
+}
+
+.review-video-info-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.review-video-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 4px;
+}
+
+.review-video-info-label {
+  font-size: 14.5px;
+  color: #64748B;
+  font-weight: 400;
+}
+
+.review-video-info-value {
+  font-size: 14.5px;
+  color: #0F172A;
+  font-weight: 600;
+  text-align: right;
+}
+
+.review-video-info-divider {
+  height: 1px;
+  background-color: #F1F5F9;
+  width: 100%;
+}
+
+.review-video-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.review-video-action-btn {
+  flex: 1;
+  height: 46px;
+  background-color: #FFFFFF;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+}
+
+.review-video-action-btn:active {
+  transform: scale(0.99);
+}
+
+.review-video-approve-btn {
+  border: 1px solid #16A34A;
+  color: #16A34A;
+}
+
+.review-video-approve-btn:hover {
+  background-color: #F0FDF4;
+  border-color: #15803D;
+}
+
+.review-video-reject-btn {
+  border: 1px solid #EF4444;
+  color: #DC2626;
+}
+
+.review-video-reject-btn:hover {
+  background-color: #FEF2F2;
+  border-color: #B91C1C;
+}
+
+.review-video-btn-icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
+}

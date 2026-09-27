@@ -15,10 +15,11 @@ import { ProviderRequests } from '../components/provider/ProviderRequests'
 import { ProviderRequestDetails } from '../components/provider/ProviderRequestDetails'
 import { ProviderVideos } from '../components/provider/ProviderVideos'
 import { ProviderUploadVideo } from '../components/provider/ProviderUploadVideo'
+import { ReviewVideo } from '../components/admin/ReviewVideo'
 import { SearchHeader } from '../components/search/SearchHeader'
 import { SearchResultCard } from '../components/search/SearchResultCard'
 import { FilterSheet } from '../components/search/FilterSheet'
-import { SearchIcon } from '../components/common/Icons'
+import { SearchIcon, ChevronLeftIcon } from '../components/common/Icons'
 import {
   CATEGORIES,
   MOCK_MARKETPLACE_ITEMS,
@@ -26,12 +27,14 @@ import {
   DEFAULT_SEARCH_FILTERS,
   parsePriceRange,
   INITIAL_PROVIDER_REQUESTS,
+  DEFAULT_REVIEW_VIDEO_ITEM,
+  type ReviewVideoItem,
 } from '../lib/mockData'
 import type { MarketplaceItem, User, BookingRequest, BookingStatus, SearchFilters, Provider } from '../types/marketplace'
 
 export function DiscoverPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile' | 'chat' | 'provider-signup' | 'provider-hub' | 'provider-requests' | 'provider-request-details' | 'provider-videos' | 'provider-upload-video'>('discover')
+  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile' | 'chat' | 'provider-signup' | 'provider-hub' | 'provider-requests' | 'provider-request-details' | 'provider-videos' | 'provider-upload-video' | 'review-video' | 'reject-video'>('discover')
   const [selectedProfileItem, setSelectedProfileItem] = useState<MarketplaceItem | null>(null)
   const [profileReturnView, setProfileReturnView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat' | 'provider-hub' | 'provider-requests' | 'provider-request-details' | 'provider-videos' | 'provider-upload-video'>('discover')
   const [searchQuery, setSearchQuery] = useState('')
@@ -47,6 +50,8 @@ export function DiscoverPage() {
   const [bookingTargetItem, setBookingTargetItem] = useState<MarketplaceItem | null>(null)
   const [bookingReturnView, setBookingReturnView] = useState<'video-viewer' | 'provider-profile'>('video-viewer')
   const [uploadVideoReturnView, setUploadVideoReturnView] = useState<'provider-hub' | 'provider-videos'>('provider-hub')
+  const [reviewVideoTarget, setReviewVideoTarget] = useState<ReviewVideoItem>(DEFAULT_REVIEW_VIDEO_ITEM)
+  const [reviewVideoReturnView] = useState<'provider-hub' | 'provider-videos'>('provider-hub')
   const [bookings, setBookings] = useState<BookingRequest[]>([])
   const [bookingsTab, setBookingsTab] = useState<'All' | 'Pending' | 'Accepted' | 'In Progress' | 'Declined' | 'Canceled' | 'Completed'>('All')
   const [activeChatBooking, setActiveChatBooking] = useState<BookingRequest | null>(null)
@@ -339,12 +344,41 @@ export function DiscoverPage() {
       } else if (window.location.hash === '#request-details-declined') {
         setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[9])
         setCurrentView('provider-request-details')
+      } else if (window.location.hash === '#review-video') {
+        setCurrentView('review-video')
+      } else if (window.location.hash === '#reject-video') {
+        setCurrentView('reject-video')
       }
     }
     checkHash()
     window.addEventListener('hashchange', checkHash)
     return () => window.removeEventListener('hashchange', checkHash)
   }, [])
+
+  // Admin Review Video Action Handlers
+  const handleBackFromReviewVideo = () => {
+    setCurrentView(reviewVideoReturnView)
+    if (window.location.hash === '#review-video') {
+      history.pushState(null, '', window.location.pathname + window.location.search)
+    }
+  }
+
+  const handleApproveVideo = (item: ReviewVideoItem) => {
+    showNotification(`Video for "${item.serviceName}" has been approved!`)
+    handleBackFromReviewVideo()
+  }
+
+  const handleRejectVideo = (item: ReviewVideoItem) => {
+    setReviewVideoTarget(item)
+    setCurrentView('reject-video')
+  }
+
+  const handleBackFromRejectVideo = () => {
+    setCurrentView('review-video')
+    if (window.location.hash === '#reject-video') {
+      window.location.hash = '#review-video'
+    }
+  }
 
   const handleBookingSubmit = (newBooking: BookingRequest) => {
     setBookings((prev) => [newBooking, ...prev])
@@ -620,6 +654,40 @@ export function DiscoverPage() {
               showNotification('Video saved successfully!')
             }}
           />
+        ) : currentView === 'review-video' ? (
+          <ReviewVideo
+            item={reviewVideoTarget}
+            onBack={handleBackFromReviewVideo}
+            onApprove={handleApproveVideo}
+            onReject={handleRejectVideo}
+          />
+        ) : currentView === 'reject-video' ? (
+          <div className="review-video-screen">
+            <div className="review-video-container">
+              <header className="review-video-header">
+                <button
+                  type="button"
+                  className="review-video-back-btn"
+                  onClick={handleBackFromRejectVideo}
+                  aria-label="Back to Review Video"
+                >
+                  <ChevronLeftIcon className="review-video-back-icon" />
+                </button>
+                <h1 className="review-video-title">Reject Video</h1>
+              </header>
+              <main style={{ padding: '24px', color: '#FFFFFF', flex: 1, backgroundColor: '#21252B' }}>
+                <p style={{ fontSize: '15px', color: '#E2E8F0', marginBottom: '8px' }}>
+                  Rejecting video for: <strong>{reviewVideoTarget.serviceName}</strong>
+                </p>
+                <p style={{ fontSize: '14px', color: '#94A3B8' }}>
+                  Provider: <strong>{reviewVideoTarget.providerName}</strong>
+                </p>
+                <p style={{ marginTop: '20px', fontSize: '13px', color: '#64748B', fontStyle: 'italic' }}>
+                  (Reject Video screen will be implemented in Task D)
+                </p>
+              </main>
+            </div>
+          </div>
         ) : currentView === 'provider-requests' ? (
           <ProviderRequests
             requests={providerRequests}
@@ -765,7 +833,11 @@ export function DiscoverPage() {
             window.location.hash.startsWith('#provider-') ||
             window.location.hash === '#client-requests' ||
             window.location.hash.startsWith('#request-details-') ||
-            currentView.startsWith('provider-')
+            window.location.hash === '#review-video' ||
+            window.location.hash === '#reject-video' ||
+            currentView.startsWith('provider-') ||
+            currentView === 'review-video' ||
+            currentView === 'reject-video'
           }
           currentView={currentView}
         />
