@@ -83,9 +83,9 @@ export function ProviderCard({ item, onCardClick, onProviderClick }: ProviderCar
         </h3>
         <div className="service-meta-row">
           <span className="service-price">{service.priceDisplay}</span>
-          <div className="service-rating" aria-label={`Rating: ${rating} out of 5 stars`}>
+          <div className="service-rating" aria-label={rating > 0 ? `Rating: ${rating.toFixed(1)} out of 5 stars` : 'New Provider'}>
             <StarIcon />
-            <span className="rating-value">{rating.toFixed(1)}</span>
+            <span className="rating-value">{rating > 0 ? rating.toFixed(1) : 'New'}</span>
           </div>
         </div>
       </footer>

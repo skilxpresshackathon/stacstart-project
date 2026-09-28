@@ -16,6 +16,7 @@ interface ProviderRequestDetailsProps {
   onBack: () => void
   onAccept: (request: BookingRequest) => void
   onDecline: (request: BookingRequest) => void
+  onMarkInProgress?: (request: BookingRequest) => void
   onMarkComplete: (request: BookingRequest) => void
   messages?: ChatMessage[]
   onSendMessage?: (text: string) => void
@@ -33,6 +34,7 @@ export function ProviderRequestDetails({
   onBack,
   onAccept,
   onDecline,
+  onMarkInProgress,
   onMarkComplete,
   messages: externalMessages,
   onSendMessage,
@@ -143,7 +145,7 @@ export function ProviderRequestDetails({
 
   const activeMessages = externalMessages || localMessages
 
-  const isReadOnly = request.status === 'declined' || request.status === 'completed' || request.status === 'cancelled'
+  const isReadOnly = request.status === 'declined' || request.status === 'completed' || request.status === 'canceled' || request.status === 'cancelled'
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -213,6 +215,7 @@ export function ProviderRequestDetails({
             <span>Declined</span>
           </span>
         )
+      case 'canceled':
       case 'cancelled':
         return (
           <span className="client-req-badge badge-declined">
@@ -311,7 +314,20 @@ export function ProviderRequestDetails({
             </div>
           )}
 
-          {(request.status === 'in_progress' || request.status === 'accepted') && (
+          {request.status === 'accepted' && (
+            <div className="request-details-actions-full">
+              <button
+                type="button"
+                className="details-action-btn details-complete-btn"
+                onClick={() => (onMarkInProgress ? onMarkInProgress(request) : onMarkComplete(request))}
+              >
+                <ClockIcon className="btn-icon" />
+                <span>Mark as In Progress</span>
+              </button>
+            </div>
+          )}
+
+          {request.status === 'in_progress' && (
             <div className="request-details-actions-full">
               <button
                 type="button"

@@ -58,13 +58,24 @@ export function VideoViewer({
 
         {/* Center Media Play Area */}
         <div className="video-viewer-media-stage">
-          <button
-            type="button"
-            className="video-viewer-play-btn"
-            aria-label={`Play video for ${service.name}`}
-          >
-            <PlayIcon />
-          </button>
+          {item.video?.videoUrl ? (
+            <video
+              src={item.video.videoUrl}
+              className="video-viewer-player"
+              controls
+              playsInline
+              poster={item.video.thumbnailUrl}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            <button
+              type="button"
+              className="video-viewer-play-btn"
+              aria-label={`Play video for ${service.name}`}
+            >
+              <PlayIcon />
+            </button>
+          )}
         </div>
 
         {/* Bottom Overlay Content */}
@@ -110,10 +121,10 @@ export function VideoViewer({
             </span>
             <div
               className="video-viewer-meta-item video-viewer-rating"
-              aria-label={`Rating: ${rating} out of 5 stars`}
+              aria-label={rating > 0 ? `Rating: ${rating.toFixed(1)} out of 5 stars` : 'New Provider'}
             >
               <StarIcon />
-              <span>{rating.toFixed(1)}</span>
+              <span>{rating > 0 ? rating.toFixed(1) : 'New'}</span>
             </div>
           </div>
 

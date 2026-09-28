@@ -25,11 +25,13 @@ const STATUS_TABS: StatusTab[] = [
 
 interface ProviderRequestsProps {
   requests: BookingRequest[]
+  isLoading?: boolean
   onBack: () => void
   onMenuClick: () => void
   onOpenDetails: (request: BookingRequest) => void
   onAcceptRequest: (request: BookingRequest) => void
   onDeclineRequest: (request: BookingRequest) => void
+  onMarkInProgressRequest?: (request: BookingRequest) => void
   onMarkCompleteRequest: (request: BookingRequest) => void
   onDeleteRequest?: (requestId: string) => void
   onViewRating?: (request: BookingRequest) => void
@@ -37,11 +39,13 @@ interface ProviderRequestsProps {
 
 export function ProviderRequests({
   requests,
+  isLoading = false,
   onBack,
   onMenuClick,
   onOpenDetails,
   onAcceptRequest,
   onDeclineRequest,
+  onMarkInProgressRequest,
   onMarkCompleteRequest,
   onDeleteRequest,
   onViewRating,
@@ -62,7 +66,7 @@ export function ProviderRequests({
       case 'Declined':
         return req.status === 'declined'
       case 'Canceled':
-        return req.status === 'cancelled'
+        return req.status === 'canceled' || req.status === 'cancelled'
       case 'Completed':
         return req.status === 'completed'
       default:
@@ -107,6 +111,7 @@ export function ProviderRequests({
             <span>Declined</span>
           </span>
         )
+      case 'canceled':
       case 'cancelled':
         return (
           <span className="client-req-badge badge-declined">
@@ -165,7 +170,12 @@ export function ProviderRequests({
 
         {/* Requests List */}
         <main className="client-requests-content">
-          {filteredRequests.length === 0 ? (
+          {isLoading ? (
+            <div className="client-requests-empty">
+              <p className="empty-title">Loading requests...</p>
+              <p className="empty-subtitle">Retrieving your client requests.</p>
+            </div>
+          ) : filteredRequests.length === 0 ? (
             <div className="client-requests-empty">
               <p className="empty-title">No requests found</p>
               <p className="empty-subtitle">
@@ -252,10 +262,10 @@ export function ProviderRequests({
                         <button
                           type="button"
                           className="req-action-btn req-complete-btn"
-                          onClick={() => onMarkCompleteRequest(req)}
+                          onClick={() => (onMarkInProgressRequest ? onMarkInProgressRequest(req) : onMarkCompleteRequest(req))}
                         >
-                          <CheckIcon className="req-btn-icon" />
-                          <span>Mark Complete</span>
+                          <ClockIcon className="req-btn-icon" />
+                          <span>Mark In Progress</span>
                         </button>
                       </>
                     )}

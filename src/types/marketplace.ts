@@ -31,6 +31,8 @@ export interface Service {
   priceDisplay: string
   priceType?: PriceType
   description?: string
+  minPrice?: number
+  maxPrice?: number
 }
 
 export interface VideoItem {
@@ -59,7 +61,7 @@ export interface User {
   role: 'customer' | 'provider' | 'admin'
 }
 
-export type BookingStatus = 'pending' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'cancelled'
+export type BookingStatus = 'pending' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'canceled' | 'cancelled'
 
 export interface BookingRequest {
   id: string
@@ -73,6 +75,8 @@ export interface BookingRequest {
   preferredTime?: string
   status: BookingStatus
   createdAt: string
+  videoId?: string
+  rejectionReason?: string
 }
 
 export type SearchFilters = {

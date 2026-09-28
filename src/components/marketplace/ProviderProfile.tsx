@@ -65,8 +65,14 @@ export function ProviderProfile({
   // Reviews list
   const reviews: Review[] = provider.reviews || []
 
-  // Review count
-  const reviewCount = provider.reviewCount ?? 126
+  // Review count and real average rating
+  const reviewCount = provider.reviewCount ?? reviews.length
+  const effectiveRating =
+    rating > 0
+      ? rating
+      : reviews.length > 0
+      ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
+      : 0
 
   return (
     <div
@@ -117,12 +123,22 @@ export function ProviderProfile({
               </div>
               <div
                 className="profile-meta-item profile-rating"
-                aria-label={`Rating: ${rating.toFixed(1)} out of 5 stars`}
+                aria-label={
+                  effectiveRating > 0
+                    ? `Rating: ${effectiveRating.toFixed(1)} out of 5 stars`
+                    : 'No ratings yet'
+                }
               >
                 <StarIcon className="profile-star-gold" />
-                <span className="profile-rating-score">{rating.toFixed(1)}</span>
+                <span className="profile-rating-score">
+                  {effectiveRating > 0 ? effectiveRating.toFixed(1) : 'New'}
+                </span>
               </div>
-              <span className="profile-review-count">{reviewCount} reviews</span>
+              <span className="profile-review-count">
+                {reviewCount === 0
+                  ? 'No reviews yet'
+                  : `${reviewCount} ${reviewCount === 1 ? 'review' : 'reviews'}`}
+              </span>
             </div>
           </div>
 

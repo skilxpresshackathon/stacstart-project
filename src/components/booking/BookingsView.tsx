@@ -25,6 +25,7 @@ const STATUS_TABS: FilterTab[] = [
 
 interface BookingsViewProps {
   bookings: BookingRequest[]
+  isLoading?: boolean
   onBackToDiscover: () => void
   onProviderClick?: (provider: Provider) => void
   onMenuClick?: () => void
@@ -38,6 +39,7 @@ interface BookingsViewProps {
 
 export function BookingsView({
   bookings,
+  isLoading = false,
   onBackToDiscover,
   onProviderClick,
   onMenuClick,
@@ -63,7 +65,7 @@ export function BookingsView({
     if (selectedTab === 'Accepted') return booking.status === 'accepted'
     if (selectedTab === 'In Progress') return booking.status === 'in_progress'
     if (selectedTab === 'Declined') return booking.status === 'declined'
-    if (selectedTab === 'Canceled') return booking.status === 'cancelled'
+    if (selectedTab === 'Canceled') return booking.status === 'canceled' || booking.status === 'cancelled'
     if (selectedTab === 'Completed') return booking.status === 'completed'
     return true
   })
@@ -115,7 +117,13 @@ export function BookingsView({
 
       {/* Bookings Content */}
       <div className="bookings-content-area">
-        {filteredBookings.length === 0 ? (
+        {isLoading ? (
+          <div className="empty-state bookings-empty">
+            <CalendarIcon className="empty-state-icon" />
+            <p className="empty-state-title">Loading bookings...</p>
+            <p className="empty-state-subtitle">Retrieving your service requests.</p>
+          </div>
+        ) : filteredBookings.length === 0 ? (
           <div className="empty-state bookings-empty">
             <CalendarIcon className="empty-state-icon" />
             <p className="empty-state-title">
@@ -180,7 +188,7 @@ function BookingCardItem({
   )
 
   const isCompleted = status === 'completed'
-  const isDeclinedOrCancelled = status === 'declined' || status === 'cancelled'
+  const isDeclinedOrCancelled = status === 'declined' || status === 'canceled' || status === 'cancelled'
   const isInProgress = status === 'in_progress'
 
   return (
@@ -303,6 +311,7 @@ function renderStatusIndicator(status: string) {
           <span>Declined</span>
         </>
       )
+    case 'canceled':
     case 'cancelled':
       return (
         <>

@@ -24,21 +24,27 @@ import { SearchResultCard } from '../components/search/SearchResultCard'
 import { FilterSheet } from '../components/search/FilterSheet'
 import { SearchIcon } from '../components/common/Icons'
 import { supabase } from '../lib/supabase'
+import { fetchDiscoverMarketplaceItems, fetchProviderVideos, fetchAdminModerationVideos } from '../lib/data/videos'
+import { fetchProviderDetails } from '../lib/data/providers'
 import {
   CATEGORIES,
-  MOCK_MARKETPLACE_ITEMS,
   LOCATIONS,
   DEFAULT_SEARCH_FILTERS,
   parsePriceRange,
-  INITIAL_PROVIDER_REQUESTS,
   DEFAULT_REVIEW_VIDEO_ITEM,
   type ReviewVideoItem,
   type RejectionReason,
   type ModerationVideoItem,
-  INITIAL_MODERATION_VIDEOS,
+  type ProviderVideoItem,
   type AdminPlatformMetrics,
   DEFAULT_ADMIN_METRICS,
 } from '../lib/mockData'
+import {
+  fetchCustomerBookings,
+  fetchProviderBookings,
+  updateBookingStatus,
+  cancelBooking,
+} from '../lib/data/bookings'
 import type { MarketplaceItem, User, BookingRequest, BookingStatus, SearchFilters, Provider } from '../types/marketplace'
 
 export function DiscoverPage() {
@@ -62,16 +68,27 @@ export function DiscoverPage() {
   const [reviewVideoTarget, setReviewVideoTarget] = useState<ReviewVideoItem>(DEFAULT_REVIEW_VIDEO_ITEM)
   const [reviewVideoReturnView, setReviewVideoReturnView] = useState<'provider-hub' | 'provider-videos' | 'video-moderation'>('video-moderation')
   const [videoModerationReturnView, setVideoModerationReturnView] = useState<'provider-hub' | 'admin-dashboard'>('admin-dashboard')
-  const [moderationVideos, setModerationVideos] = useState<ModerationVideoItem[]>(INITIAL_MODERATION_VIDEOS)
+  const [moderationVideos, setModerationVideos] = useState<ModerationVideoItem[]>([])
   const [adminMetrics] = useState<AdminPlatformMetrics>(DEFAULT_ADMIN_METRICS)
   const [bookings, setBookings] = useState<BookingRequest[]>([])
   const [bookingsTab, setBookingsTab] = useState<'All' | 'Pending' | 'Accepted' | 'In Progress' | 'Declined' | 'Canceled' | 'Completed'>('All')
   const [activeChatBooking, setActiveChatBooking] = useState<BookingRequest | null>(null)
-  const [providerRequests, setProviderRequests] = useState<BookingRequest[]>(INITIAL_PROVIDER_REQUESTS)
+  const [providerRequests, setProviderRequests] = useState<BookingRequest[]>([])
+  const providerRequestsRef = useRef<BookingRequest[]>([])
+  useEffect(() => {
+    providerRequestsRef.current = providerRequests
+  }, [providerRequests])
+  const [isBookingsLoading, setIsBookingsLoading] = useState(false)
+  const [isProviderRequestsLoading, setIsProviderRequestsLoading] = useState(false)
   const [activeProviderRequest, setActiveProviderRequest] = useState<BookingRequest | null>(null)
   const [chatMessagesMap, setChatMessagesMap] = useState<Record<string, ChatMessage[]>>({})
   const [notification, setNotification] = useState<string | null>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
+
+  // Real Supabase Marketplace data state
+  const [marketplaceItems, setMarketplaceItems] = useState<MarketplaceItem[]>([])
+  const [isMarketplaceLoading, setIsMarketplaceLoading] = useState(true)
+  const [providerVideosList, setProviderVideosList] = useState<ProviderVideoItem[]>([])
 
   // Scroll position preservation for Discover feed
   const lastDiscoverScrollY = useRef(0)
@@ -134,9 +151,105 @@ export function DiscoverPage() {
     return { pending, inProgress, completed, declined }
   }, [providerRequests])
 
-  // Search Activity results (combining query, location, category, budget)
+  // Real Marketplace Data Loading
+  useEffect(() => {
+    let isMounted = true
+    fetchDiscoverMarketplaceItems()
+      .then((items) => {
+        if (isMounted) {
+          setMarketplaceItems(items)
+          setIsMarketplaceLoading(false)
+        }
+      })
+      .catch((err) => {
+        if (isMounted) {
+          console.warn('[DiscoverPage] Failed to fetch marketplace items:', err)
+          showNotification('Unable to load marketplace data. Please try again.')
+          setIsMarketplaceLoading(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  // Provider Videos Data Loading
+  useEffect(() => {
+    if (currentView === 'provider-videos' && currentUser) {
+      fetchProviderVideos(currentUser.id)
+        .then((vids) => setProviderVideosList(vids))
+        .catch((err) => console.warn('[DiscoverPage] Error loading provider videos:', err))
+    }
+  }, [currentView, currentUser])
+
+  // Admin Moderation Data Loading
+  useEffect(() => {
+    if (
+      (currentView === 'video-moderation' || currentView === 'admin-dashboard') &&
+      currentUser?.role === 'admin'
+    ) {
+      fetchAdminModerationVideos()
+        .then((vids) => setModerationVideos(vids))
+        .catch((err) => console.warn('[DiscoverPage] Error loading moderation videos:', err))
+    }
+  }, [currentView, currentUser])
+
+  // Customer Bookings Data Loading
+  useEffect(() => {
+    if (currentView === 'bookings' && currentUser) {
+      let isMounted = true
+      fetchCustomerBookings()
+        .then((data) => {
+          if (isMounted) {
+            setBookings(data)
+            setIsBookingsLoading(false)
+          }
+        })
+        .catch((err) => {
+          if (isMounted) {
+            console.warn('[DiscoverPage] Error loading customer bookings:', err)
+            setIsBookingsLoading(false)
+          }
+        })
+      return () => {
+        isMounted = false
+      }
+    }
+  }, [currentView, currentUser])
+
+  // Provider Requests Data Loading
+  useEffect(() => {
+    if (
+      (currentView === 'provider-hub' ||
+        currentView === 'provider-requests' ||
+        currentView === 'provider-request-details') &&
+      currentUser &&
+      (currentUser.role === 'provider' || currentUser.role === 'admin')
+    ) {
+      let isMounted = true
+      fetchProviderBookings()
+        .then((data) => {
+          if (isMounted) {
+            setProviderRequests(data)
+            setIsProviderRequestsLoading(false)
+          }
+        })
+        .catch((err) => {
+          if (isMounted) {
+            console.warn('[DiscoverPage] Error loading provider requests:', err)
+            setIsProviderRequestsLoading(false)
+          }
+        })
+      return () => {
+        isMounted = false
+      }
+    }
+  }, [currentView, currentUser])
+
+  // Search Activity results (combining query, location, category, budget with real marketplace items)
   const searchResults = useMemo(() => {
-    return MOCK_MARKETPLACE_ITEMS.filter((item) => {
+    return marketplaceItems.filter((item) => {
       // 1. Search Query
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase().trim()
@@ -164,9 +277,12 @@ export function DiscoverPage() {
         }
       }
 
-      // 4. Budget range filter
+      // 4. Budget range filter (numeric comparisons)
       if (searchFilters.minBudget > 0 || searchFilters.maxBudget < 200000) {
-        const { min: itemMin, max: itemMax } = parsePriceRange(item.service.priceDisplay)
+        const itemMin =
+          item.service.minPrice ?? parsePriceRange(item.service.priceDisplay).min
+        const itemMax =
+          item.service.maxPrice ?? parsePriceRange(item.service.priceDisplay).max
         if (itemMin > searchFilters.maxBudget || itemMax < searchFilters.minBudget) {
           return false
         }
@@ -174,7 +290,7 @@ export function DiscoverPage() {
 
       return true
     })
-  }, [searchQuery, searchFilters])
+  }, [marketplaceItems, searchQuery, searchFilters])
 
   // Filter dismissal handlers
   const handleRemoveLocation = () => {
@@ -340,9 +456,9 @@ export function DiscoverPage() {
     }
   }
 
-  const handleOpenProviderProfile = (
+  const handleOpenProviderProfile = async (
     item: MarketplaceItem,
-    fromView: 'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat'
+    fromView: 'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat' | 'provider-hub' | 'provider-requests' | 'provider-request-details' | 'provider-videos' | 'provider-upload-video'
   ) => {
     if (fromView === 'discover' && !isSearchActive) {
       lastDiscoverScrollY.current = window.scrollY
@@ -350,22 +466,68 @@ export function DiscoverPage() {
     setProfileReturnView(fromView)
     setSelectedProfileItem(item)
     setCurrentView('provider-profile')
+
+    // Fetch full provider details (services, videos, reviews) from Supabase
+    if (item.provider?.id) {
+      const fullProvider = await fetchProviderDetails(item.provider.id)
+      if (fullProvider) {
+        setSelectedProfileItem((prev) => (prev ? { ...prev, provider: fullProvider } : prev))
+      }
+    }
   }
 
   const handleProviderClickFromBookings = (provider: Provider) => {
     const matchingItem =
-      MOCK_MARKETPLACE_ITEMS.find((it) => it.provider.id === provider.id) ||
-      MOCK_MARKETPLACE_ITEMS.find((it) => it.provider.businessName === provider.businessName) ||
-      MOCK_MARKETPLACE_ITEMS[0]
-    handleOpenProviderProfile(matchingItem, 'bookings')
+      marketplaceItems.find((it) => it.provider.id === provider.id) ||
+      marketplaceItems.find((it) => it.provider.businessName === provider.businessName)
+    if (matchingItem) {
+      handleOpenProviderProfile(matchingItem, 'bookings')
+    } else {
+      const fallbackItem: MarketplaceItem = {
+        id: `prov-item-${provider.id}`,
+        provider,
+        service: provider.services?.[0] || {
+          id: 'srv-0',
+          providerId: provider.id,
+          name: provider.businessName,
+          priceDisplay: 'Contact for pricing',
+        },
+        video: provider.featuredVideos?.[0] || {
+          id: 'vid-0',
+          providerId: provider.id,
+          duration: '0:30',
+        },
+        rating: 0,
+      }
+      handleOpenProviderProfile(fallbackItem, 'bookings')
+    }
   }
 
   const handleProviderClickFromChat = (provider: Provider) => {
     const matchingItem =
-      MOCK_MARKETPLACE_ITEMS.find((it) => it.provider.id === provider.id) ||
-      MOCK_MARKETPLACE_ITEMS.find((it) => it.provider.businessName === provider.businessName) ||
-      MOCK_MARKETPLACE_ITEMS[0]
-    handleOpenProviderProfile(matchingItem, 'chat')
+      marketplaceItems.find((it) => it.provider.id === provider.id) ||
+      marketplaceItems.find((it) => it.provider.businessName === provider.businessName)
+    if (matchingItem) {
+      handleOpenProviderProfile(matchingItem, 'chat')
+    } else {
+      const fallbackItem: MarketplaceItem = {
+        id: `prov-item-${provider.id}`,
+        provider,
+        service: provider.services?.[0] || {
+          id: 'srv-0',
+          providerId: provider.id,
+          name: provider.businessName,
+          priceDisplay: 'Contact for pricing',
+        },
+        video: provider.featuredVideos?.[0] || {
+          id: 'vid-0',
+          providerId: provider.id,
+          duration: '0:30',
+        },
+        rating: 0,
+      }
+      handleOpenProviderProfile(fallbackItem, 'chat')
+    }
   }
 
   const handleBackFromProviderProfile = () => {
@@ -452,16 +614,20 @@ export function DiscoverPage() {
         } else if (hash === '#provider-upload-video') {
           setCurrentView('provider-upload-video')
         } else if (hash === '#request-details-pending') {
-          setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[0])
+          const req = providerRequestsRef.current.find((r) => r.status === 'pending') || providerRequestsRef.current[0] || null
+          if (req) setActiveProviderRequest(req)
           setCurrentView('provider-request-details')
         } else if (hash === '#request-details-inprogress') {
-          setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[2])
+          const req = providerRequestsRef.current.find((r) => r.status === 'in_progress') || providerRequestsRef.current[0] || null
+          if (req) setActiveProviderRequest(req)
           setCurrentView('provider-request-details')
         } else if (hash === '#request-details-completed') {
-          setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[3])
+          const req = providerRequestsRef.current.find((r) => r.status === 'completed') || providerRequestsRef.current[0] || null
+          if (req) setActiveProviderRequest(req)
           setCurrentView('provider-request-details')
         } else if (hash === '#request-details-declined') {
-          setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[9])
+          const req = providerRequestsRef.current.find((r) => r.status === 'declined') || providerRequestsRef.current[0] || null
+          if (req) setActiveProviderRequest(req)
           setCurrentView('provider-request-details')
         }
         return
@@ -469,9 +635,11 @@ export function DiscoverPage() {
 
       // Customer routes
       if (hash === '#profile') {
-        setSelectedProfileItem(MOCK_MARKETPLACE_ITEMS[0])
-        setProfileReturnView('discover')
-        setCurrentView('provider-profile')
+        if (marketplaceItems.length > 0) {
+          setSelectedProfileItem(marketplaceItems[0])
+          setProfileReturnView('discover')
+          setCurrentView('provider-profile')
+        }
       } else if (hash === '#bookings') {
         if (!currentUser) {
           showNotification('Please sign in to view your bookings.')
@@ -501,7 +669,7 @@ export function DiscoverPage() {
     checkHash()
     window.addEventListener('hashchange', checkHash)
     return () => window.removeEventListener('hashchange', checkHash)
-  }, [currentUser, isAuthLoading])
+  }, [currentUser, isAuthLoading, marketplaceItems])
 
   // Admin Review Video Action Handlers
   const handleBackFromReviewVideo = () => {
@@ -574,10 +742,7 @@ export function DiscoverPage() {
   }
 
   const handleBookingSubmit = (newBooking: BookingRequest) => {
-    setBookings((prev) => [newBooking, ...prev])
-    if (newBooking.provider.id === 'prov-1' || newBooking.provider.businessName === 'Ade Beauty Studio') {
-      setProviderRequests((prev) => [newBooking, ...prev])
-    }
+    setBookings((prev) => [newBooking, ...prev.filter((b) => b.id !== newBooking.id)])
     setBookingTargetItem(null)
     setSelectedDetailItem(null)
     setCurrentView('bookings')
@@ -635,9 +800,22 @@ export function DiscoverPage() {
     )
   }
 
-  const handleDeleteBooking = (bookingId: string) => {
-    setBookings((prev) => prev.filter((b) => b.id !== bookingId))
-    showNotification('Booking removed.')
+  const handleDeleteBooking = async (bookingId: string) => {
+    const booking = bookings.find((b) => b.id === bookingId)
+    if (booking && (booking.status === 'pending' || booking.status === 'accepted')) {
+      const { success, error } = await cancelBooking(bookingId)
+      if (!success) {
+        showNotification(`Failed to cancel booking: ${error || 'Unknown error'}`)
+        return
+      }
+      setBookings((prev) =>
+        prev.map((b) => (b.id === bookingId ? { ...b, status: 'canceled' } : b))
+      )
+      showNotification('Booking canceled.')
+    } else {
+      setBookings((prev) => prev.filter((b) => b.id !== bookingId))
+      showNotification('Booking removed.')
+    }
   }
 
   const handleEditBooking = (booking: BookingRequest) => {
@@ -678,20 +856,30 @@ export function DiscoverPage() {
   }
 
   // Provider Request Action Handlers
-  const handleAcceptProviderRequest = (request: BookingRequest) => {
+  const handleAcceptProviderRequest = async (request: BookingRequest) => {
+    const { success, error } = await updateBookingStatus(request.id, 'accepted')
+    if (!success) {
+      showNotification(`Failed to accept request: ${error || 'Unknown error'}`)
+      return
+    }
     setProviderRequests((prev) =>
-      prev.map((r) => (r.id === request.id ? { ...r, status: 'in_progress' } : r))
+      prev.map((r) => (r.id === request.id ? { ...r, status: 'accepted' } : r))
     )
     setBookings((prev) =>
-      prev.map((r) => (r.id === request.id ? { ...r, status: 'in_progress' } : r))
+      prev.map((r) => (r.id === request.id ? { ...r, status: 'accepted' } : r))
     )
     setActiveProviderRequest((prev) =>
-      prev && prev.id === request.id ? { ...prev, status: 'in_progress' } : prev
+      prev && prev.id === request.id ? { ...prev, status: 'accepted' } : prev
     )
-    showNotification(`Accepted request from ${request.customerName}. Status: In Progress.`)
+    showNotification(`Accepted request from ${request.customerName}.`)
   }
 
-  const handleDeclineProviderRequest = (request: BookingRequest) => {
+  const handleDeclineProviderRequest = async (request: BookingRequest) => {
+    const { success, error } = await updateBookingStatus(request.id, 'declined')
+    if (!success) {
+      showNotification(`Failed to decline request: ${error || 'Unknown error'}`)
+      return
+    }
     setProviderRequests((prev) =>
       prev.map((r) => (r.id === request.id ? { ...r, status: 'declined' } : r))
     )
@@ -704,7 +892,37 @@ export function DiscoverPage() {
     showNotification(`Declined request from ${request.customerName}.`)
   }
 
-  const handleMarkCompleteProviderRequest = (request: BookingRequest) => {
+  const handleMarkInProgressProviderRequest = async (request: BookingRequest) => {
+    const { success, error } = await updateBookingStatus(request.id, 'in_progress')
+    if (!success) {
+      showNotification(`Failed to update request: ${error || 'Unknown error'}`)
+      return
+    }
+    setProviderRequests((prev) =>
+      prev.map((r) => (r.id === request.id ? { ...r, status: 'in_progress' } : r))
+    )
+    setBookings((prev) =>
+      prev.map((r) => (r.id === request.id ? { ...r, status: 'in_progress' } : r))
+    )
+    setActiveProviderRequest((prev) =>
+      prev && prev.id === request.id ? { ...prev, status: 'in_progress' } : prev
+    )
+    showNotification(`Marked request from ${request.customerName} as in progress!`)
+  }
+
+  const handleMarkCompleteProviderRequest = async (request: BookingRequest) => {
+    if (request.status === 'accepted') {
+      const inProgRes = await updateBookingStatus(request.id, 'in_progress')
+      if (!inProgRes.success) {
+        showNotification(`Failed to update request: ${inProgRes.error || 'Unknown error'}`)
+        return
+      }
+    }
+    const { success, error } = await updateBookingStatus(request.id, 'completed')
+    if (!success) {
+      showNotification(`Failed to complete request: ${error || 'Unknown error'}`)
+      return
+    }
     setProviderRequests((prev) =>
       prev.map((r) => (r.id === request.id ? { ...r, status: 'completed' } : r))
     )
@@ -823,14 +1041,43 @@ export function DiscoverPage() {
             onCustomerReviews={() =>
               showNotification('Customer reviews will be available in the next update.')
             }
-            onViewProfile={() => {
-              setSelectedProfileItem(MOCK_MARKETPLACE_ITEMS[0])
-              setProfileReturnView('provider-hub')
-              setCurrentView('provider-profile')
+            onViewProfile={async () => {
+              if (currentUser) {
+                const fullProvider = await fetchProviderDetails(currentUser.id)
+                if (fullProvider) {
+                  setSelectedProfileItem({
+                    id: `prov-item-${fullProvider.id}`,
+                    provider: fullProvider,
+                    service: fullProvider.services?.[0] || {
+                      id: 'srv-0',
+                      providerId: fullProvider.id,
+                      name: fullProvider.businessName,
+                      priceDisplay: 'Contact for pricing',
+                    },
+                    video: fullProvider.featuredVideos?.[0] || {
+                      id: 'vid-0',
+                      providerId: fullProvider.id,
+                      duration: '0:30',
+                    },
+                    rating: 0,
+                  })
+                  setProfileReturnView('provider-hub')
+                  setCurrentView('provider-profile')
+                  return
+                }
+              }
+              if (marketplaceItems.length > 0) {
+                setSelectedProfileItem(marketplaceItems[0])
+                setProfileReturnView('provider-hub')
+                setCurrentView('provider-profile')
+              } else {
+                showNotification('No provider profile found.')
+              }
             }}
           />
         ) : currentView === 'provider-videos' ? (
           <ProviderVideos
+            videos={providerVideosList}
             onBack={() => setCurrentView('provider-hub')}
             onMenuClick={() => setIsDrawerOpen(true)}
             onUploadVideo={() => {
@@ -887,11 +1134,13 @@ export function DiscoverPage() {
         ) : currentView === 'provider-requests' ? (
           <ProviderRequests
             requests={providerRequests}
+            isLoading={isProviderRequestsLoading}
             onBack={() => setCurrentView('provider-hub')}
             onMenuClick={() => setIsDrawerOpen(true)}
             onOpenDetails={handleOpenProviderRequestDetails}
             onAcceptRequest={handleAcceptProviderRequest}
             onDeclineRequest={handleDeclineProviderRequest}
+            onMarkInProgressRequest={handleMarkInProgressProviderRequest}
             onMarkCompleteRequest={handleMarkCompleteProviderRequest}
             onDeleteRequest={handleDeleteProviderRequest}
             onViewRating={(req) => showNotification(`Rating for ${req.service.name}: 5.0 ★`)}
@@ -902,6 +1151,7 @@ export function DiscoverPage() {
             onBack={() => setCurrentView('provider-requests')}
             onAccept={handleAcceptProviderRequest}
             onDecline={handleDeclineProviderRequest}
+            onMarkInProgress={handleMarkInProgressProviderRequest}
             onMarkComplete={handleMarkCompleteProviderRequest}
             messages={chatMessagesMap[activeProviderRequest.id]}
             onSendMessage={(text) => handleSendMessageInChat(activeProviderRequest.id, text, 'provider')}
@@ -909,6 +1159,7 @@ export function DiscoverPage() {
         ) : currentView === 'bookings' ? (
           <BookingsView
             bookings={bookings}
+            isLoading={isBookingsLoading}
             activeTab={bookingsTab}
             onTabChange={setBookingsTab}
             onBackToDiscover={() => {
@@ -1003,13 +1254,25 @@ export function DiscoverPage() {
                 />
               </div>
               <main className="marketplace-content">
-                <ProviderCardList
-                  items={MOCK_MARKETPLACE_ITEMS}
-                  onItemClick={handleCardClick}
-                  onProviderClick={(targetItem) =>
-                    handleOpenProviderProfile(targetItem, 'discover')
-                  }
-                />
+                {isMarketplaceLoading ? (
+                  <div
+                    className="empty-state"
+                    style={{ padding: '64px 16px', textAlign: 'center' }}
+                  >
+                    <p className="empty-state-title">Loading marketplace...</p>
+                    <p className="empty-state-subtitle">
+                      Connecting to Discover services.
+                    </p>
+                  </div>
+                ) : (
+                  <ProviderCardList
+                    items={marketplaceItems}
+                    onItemClick={handleCardClick}
+                    onProviderClick={(targetItem) =>
+                      handleOpenProviderProfile(targetItem, 'discover')
+                    }
+                  />
+                )}
               </main>
             </>
           )
@@ -1070,7 +1333,16 @@ function createDemoBooking(status: BookingStatus): BookingRequest {
     id: `demo-${status}`,
     customerId: 'cust-1',
     customerName: 'Customer',
-    provider: MOCK_MARKETPLACE_ITEMS[0].provider, // Ade Beauty Studio
+    provider: {
+      id: 'prov-demo',
+      businessName: 'Ade Beauty Studio',
+      initials: 'AB',
+      category: 'Makeup Artists',
+      location: 'Ikeja, Lagos',
+      isVerified: true,
+      bio: 'Bridal and event makeup artist based in Ikeja, specializing in soft glam.',
+      reviewCount: 0,
+    },
     service: {
       id: 'srv-1',
       providerId: 'prov-1',

@@ -9,6 +9,8 @@ import {
   ClockIcon,
 } from '../common/Icons'
 import { LOCATIONS } from '../../lib/mockData'
+import { createBooking } from '../../lib/data/bookings'
+import { fetchServicesByProviderId } from '../../lib/data/services'
 
 interface RequestServiceProps {
   item: MarketplaceItem | null
@@ -27,6 +29,13 @@ export function RequestService({
 }: RequestServiceProps) {
   // Service selection
   const [selectedService, setSelectedService] = useState<Service | null>(item?.service || null)
+  const [providerServices, setProviderServices] = useState<Service[]>(
+    item?.provider.services && item.provider.services.length > 0
+      ? item.provider.services
+      : item?.service
+      ? [item.service]
+      : []
+  )
 
   // Location selection / input
   const [location, setLocation] = useState(item?.provider.location || '')
@@ -38,8 +47,9 @@ export function RequestService({
   const [preferredDate, setPreferredDate] = useState('')
   const [preferredTime, setPreferredTime] = useState('')
 
-  // Validation / Error state
+  // Validation / Error / Loading state
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -51,12 +61,28 @@ export function RequestService({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onBack])
 
+  // Fetch active services for provider if not already present
+  useEffect(() => {
+    if (item?.provider.id) {
+      fetchServicesByProviderId(item.provider.id).then((services) => {
+        if (services.length > 0) {
+          setProviderServices(services)
+          // Keep current selection if valid, otherwise select first active service
+          setSelectedService((curr) => {
+            if (curr && services.some((s) => s.id === curr.id)) return curr
+            return services[0]
+          })
+        }
+      })
+    }
+  }, [item?.provider.id])
+
   if (!item) return null
 
   const { provider } = item
   const availableLocations = LOCATIONS.filter((loc) => loc !== 'All')
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!user) {
@@ -74,18 +100,24 @@ export function RequestService({
       return
     }
 
-    const newBooking: BookingRequest = {
-      id: `req-${Date.now()}`,
-      customerId: user.id,
-      customerName: user.name,
-      provider: provider,
-      service: selectedService,
+    setIsSubmitting(true)
+    setError('')
+
+    const { data: newBooking, error: bookingErr } = await createBooking({
+      providerId: provider.id,
+      serviceId: selectedService.id,
+      videoId: item.video?.id || null,
       location: location.trim(),
-      description: description.trim(),
-      preferredDate: preferredDate || undefined,
-      preferredTime: preferredTime || undefined,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
+      customerNotes: description.trim(),
+      requestedDate: preferredDate || null,
+      requestedTime: preferredTime || null,
+    })
+
+    setIsSubmitting(false)
+
+    if (bookingErr || !newBooking) {
+      setError(bookingErr || 'Failed to submit service request.')
+      return
     }
 
     onSubmitBooking(newBooking)
@@ -150,14 +182,15 @@ export function RequestService({
                 className="request-service-select"
                 value={selectedService?.id || ''}
                 onChange={(e) => {
-                  if (e.target.value === item.service.id) {
-                    setSelectedService(item.service)
-                  }
+                  const match = providerServices.find((s) => s.id === e.target.value)
+                  if (match) setSelectedService(match)
                 }}
               >
-                <option value={item.service.id}>
-                  {item.service.name} ({item.service.priceDisplay})
-                </option>
+                {providerServices.map((srv) => (
+                  <option key={srv.id} value={srv.id}>
+                    {srv.name} ({srv.priceDisplay})
+                  </option>
+                ))}
               </select>
               <ChevronDownIcon className="request-service-select-chevron" />
             </div>
@@ -257,8 +290,12 @@ export function RequestService({
           </div>
 
           {/* 6. Primary Action Button */}
-          <button type="submit" className="request-service-submit-btn">
-            Request Service
+          <button
+            type="submit"
+            className="request-service-submit-btn"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Requesting Service...' : 'Request Service'}
           </button>
 
           {/* 7. Explanatory Disclaimer */}
