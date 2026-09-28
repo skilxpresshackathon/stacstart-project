@@ -33,6 +33,13 @@ import {
 } from '../lib/data/videos'
 import { fetchProviderDetails } from '../lib/data/providers'
 import {
+  createReview,
+  fetchCustomerReviewedBookingIds,
+  fetchReviewForBooking,
+} from '../lib/data/reviews'
+import { ReviewBookingModal } from '../components/booking/ReviewBookingModal'
+import type { Review } from '../types/marketplace'
+import {
   CATEGORIES,
   LOCATIONS,
   DEFAULT_SEARCH_FILTERS,
@@ -95,6 +102,12 @@ export function DiscoverPage() {
   const [marketplaceItems, setMarketplaceItems] = useState<MarketplaceItem[]>([])
   const [isMarketplaceLoading, setIsMarketplaceLoading] = useState(true)
   const [providerVideosList, setProviderVideosList] = useState<ProviderVideoItem[]>([])
+
+  // Review System State
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
+  const [reviewTargetBooking, setReviewTargetBooking] = useState<BookingRequest | null>(null)
+  const [reviewTargetExisting, setReviewTargetExisting] = useState<Review | null>(null)
+  const [reviewedBookingIds, setReviewedBookingIds] = useState<Set<string>>(new Set())
 
   // Scroll position preservation for Discover feed
   const lastDiscoverScrollY = useRef(0)
@@ -218,6 +231,15 @@ export function DiscoverPage() {
             setIsBookingsLoading(false)
           }
         })
+
+      fetchCustomerReviewedBookingIds(currentUser.id)
+        .then((ids) => {
+          if (isMounted) {
+            setReviewedBookingIds(ids)
+          }
+        })
+        .catch(console.warn)
+
       return () => {
         isMounted = false
       }
@@ -811,10 +833,52 @@ export function DiscoverPage() {
     })
   }
 
-  const handleReviewBooking = (booking: BookingRequest) => {
-    showNotification(
-      `Review for ${booking.provider.businessName} will be available soon.`
-    )
+  const handleReviewBooking = async (booking: BookingRequest) => {
+    if (booking.status !== 'completed') {
+      showNotification('Only completed bookings can be reviewed.')
+      return
+    }
+    setReviewTargetBooking(booking)
+    const existing = await fetchReviewForBooking(booking.id)
+    setReviewTargetExisting(existing)
+    setIsReviewModalOpen(true)
+  }
+
+  const handleSubmitReview = async (
+    bookingId: string,
+    rating: number,
+    comment?: string
+  ): Promise<boolean> => {
+    if (!reviewTargetBooking) return false
+
+    const res = await createReview({
+      bookingId,
+      providerId: reviewTargetBooking.provider.id,
+      rating,
+      comment,
+    })
+
+    if (!res.success) {
+      showNotification(res.error || 'Failed to submit review.')
+      return false
+    }
+
+    showNotification('Review submitted successfully! Thank you for your feedback.')
+    setReviewedBookingIds((prev) => new Set([...prev, bookingId]))
+
+    // Refresh marketplace to update ratings
+    fetchDiscoverMarketplaceItems().then(setMarketplaceItems).catch(console.warn)
+
+    // If selected profile is this provider, reload reviews
+    if (selectedProfileItem?.provider.id === reviewTargetBooking.provider.id) {
+      fetchProviderDetails(reviewTargetBooking.provider.id).then((fullProvider) => {
+        if (fullProvider) {
+          setSelectedProfileItem((prev) => (prev ? { ...prev, provider: fullProvider } : prev))
+        }
+      })
+    }
+
+    return true
   }
 
   const handleDeleteBooking = async (bookingId: string) => {
@@ -1197,6 +1261,7 @@ export function DiscoverPage() {
             onReviewBooking={handleReviewBooking}
             onDeleteBooking={handleDeleteBooking}
             onEditBooking={handleEditBooking}
+            reviewedBookingIds={reviewedBookingIds}
           />
         ) : (
           /* Discover or Search Activity View */
@@ -1344,6 +1409,19 @@ export function DiscoverPage() {
             setAuthModal({ isOpen: false, mode: 'login' })
             setCurrentView('provider-signup')
           }}
+        />
+
+        {/* Customer Review Modal */}
+        <ReviewBookingModal
+          isOpen={isReviewModalOpen}
+          booking={reviewTargetBooking}
+          existingReview={reviewTargetExisting}
+          onClose={() => {
+            setIsReviewModalOpen(false)
+            setReviewTargetBooking(null)
+            setReviewTargetExisting(null)
+          }}
+          onSubmitReview={handleSubmitReview}
         />
       </div>
     </div>

@@ -1450,6 +1450,62 @@ body {
   height: 16px;
 }
 
+.booking-action-btn-main.review-btn.reviewed {
+  background-color: #F8FAFC;
+  border-color: #E2E8F0;
+  color: #64748B;
+}
+
+/* Review Modal Star Rating Selector */
+.review-modal-stars-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0 16px 0;
+}
+
+.review-modal-star-btn {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease;
+}
+
+.review-modal-star-btn:hover:not(:disabled) {
+  transform: scale(1.15);
+}
+
+.review-modal-star-icon {
+  width: 32px;
+  height: 32px;
+  color: #D1D5DB;
+  fill: none;
+  stroke: #9CA3AF;
+  stroke-width: 1.5;
+  transition: color 0.15s, fill 0.15s;
+}
+
+.review-modal-star-icon.filled {
+  color: #F59E0B;
+  fill: #F59E0B;
+  stroke: #F59E0B;
+}
+
+.review-rating-label {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-main, #111827);
+  margin-top: -6px;
+  margin-bottom: 12px;
+}
+
 .booking-btn-icon {
   width: 16px;
   height: 16px;

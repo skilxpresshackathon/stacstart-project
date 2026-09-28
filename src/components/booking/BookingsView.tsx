@@ -35,6 +35,7 @@ interface BookingsViewProps {
   onEditBooking?: (booking: BookingRequest) => void
   activeTab?: FilterTab
   onTabChange?: (tab: FilterTab) => void
+  reviewedBookingIds?: Set<string>
 }
 
 export function BookingsView({
@@ -49,6 +50,7 @@ export function BookingsView({
   onEditBooking,
   activeTab,
   onTabChange,
+  reviewedBookingIds,
 }: BookingsViewProps) {
   const [internalTab, setInternalTab] = useState<FilterTab>('All')
   const selectedTab = activeTab !== undefined ? activeTab : internalTab
@@ -148,6 +150,7 @@ export function BookingsView({
               <BookingCardItem
                 key={booking.id}
                 booking={booking}
+                isReviewed={reviewedBookingIds?.has(booking.id)}
                 onProviderClick={onProviderClick}
                 onOpenChat={onOpenChat}
                 onReviewBooking={onReviewBooking}
@@ -164,6 +167,7 @@ export function BookingsView({
 
 interface BookingCardItemProps {
   booking: BookingRequest
+  isReviewed?: boolean
   onProviderClick?: (provider: Provider) => void
   onOpenChat?: (booking: BookingRequest) => void
   onReviewBooking?: (booking: BookingRequest) => void
@@ -173,6 +177,7 @@ interface BookingCardItemProps {
 
 function BookingCardItem({
   booking,
+  isReviewed = false,
   onProviderClick,
   onOpenChat,
   onReviewBooking,
@@ -224,11 +229,12 @@ function BookingCardItem({
           <>
             <button
               type="button"
-              className="booking-action-btn-main review-btn"
+              className={`booking-action-btn-main review-btn ${isReviewed ? 'reviewed' : ''}`}
               onClick={() => onReviewBooking?.(booking)}
+              title={isReviewed ? 'View your submitted review' : 'Leave a review'}
             >
               <StarIcon className="booking-review-star-icon" />
-              <span>Review</span>
+              <span>{isReviewed ? 'Reviewed' : 'Review'}</span>
             </button>
             <button
               type="button"
