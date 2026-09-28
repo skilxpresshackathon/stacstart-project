@@ -20,6 +20,7 @@ interface NavDrawerProps {
   onNavigateAdminDashboard?: () => void
   onSignOut: () => void
   isProvider?: boolean
+  isAdmin?: boolean
   currentView?: string
 }
 
@@ -34,6 +35,7 @@ export function NavDrawer({
   onNavigateAdminDashboard,
   onSignOut,
   isProvider = false,
+  isAdmin = false,
   currentView,
 }: NavDrawerProps) {
   useEffect(() => {
@@ -121,7 +123,7 @@ export function NavDrawer({
             </button>
           )}
 
-          {isProvider && onNavigateVideoModeration && (
+          {isAdmin && onNavigateVideoModeration && (
             <button
               type="button"
               className={`nav-drawer-item ${
@@ -137,7 +139,7 @@ export function NavDrawer({
             </button>
           )}
 
-          {isProvider && onNavigateAdminDashboard && (
+          {isAdmin && onNavigateAdminDashboard && (
             <button
               type="button"
               className={`nav-drawer-item ${

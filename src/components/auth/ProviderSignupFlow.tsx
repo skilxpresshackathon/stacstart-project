@@ -9,6 +9,7 @@ import {
   InfoCircleIcon,
   UserIcon,
 } from '../common/Icons'
+import { supabase } from '../../lib/supabase'
 import type { User } from '../../types/marketplace'
 
 interface ProviderSignupFlowProps {
@@ -49,6 +50,7 @@ export function ProviderSignupFlow({
   const [selfiePreviewUrl, setSelfiePreviewUrl] = useState<string | null>(null)
 
   const [errorMessage, setErrorMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const ninFileInputRef = useRef<HTMLInputElement>(null)
   const selfieFileInputRef = useRef<HTMLInputElement>(null)
@@ -135,7 +137,7 @@ export function ProviderSignupFlow({
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleStep3Submit = (e: FormEvent) => {
+  const handleStep3Submit = async (e: FormEvent) => {
     e.preventDefault()
     setErrorMessage('')
 
@@ -155,15 +157,84 @@ export function ProviderSignupFlow({
       return
     }
 
-    // Mock provider user creation
-    const newProviderUser: User = {
-      id: `prov-${Date.now()}`,
-      name: fullName.trim(),
-      email: email.trim(),
-      role: 'provider',
-    }
+    try {
+      setIsLoading(true)
 
-    onSuccess(newProviderUser)
+      // 1. Ensure user is authenticated in Supabase Auth
+      let currentAuthUser = (await supabase.auth.getUser()).data.user
+
+      if (!currentAuthUser) {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: email.trim(),
+          password: password.trim(),
+          options: {
+            data: {
+              full_name: fullName.trim(),
+              phone: phone.trim(),
+              role: 'customer',
+            },
+          },
+        })
+
+        if (authError) {
+          setIsLoading(false)
+          setErrorMessage(authError.message)
+          return
+        }
+
+        currentAuthUser = authData.user
+
+        if (!authData.session) {
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password: password.trim(),
+          })
+          if (signInError || !signInData.user) {
+            setIsLoading(false)
+            setErrorMessage(signInError ? signInError.message : 'Please sign in to complete registration.')
+            return
+          }
+          currentAuthUser = signInData.user
+        }
+      }
+
+      if (!currentAuthUser) {
+        setIsLoading(false)
+        setErrorMessage('Authentication failed. Please try again.')
+        return
+      }
+
+      // 2. Persist provider business profile and verification submission via secure RPC
+      const { error: rpcError } = await supabase.rpc('register_as_provider', {
+        p_business_name: businessName.trim(),
+        p_category: category.trim(),
+        p_services: services.trim(),
+        p_location: location.trim(),
+        p_nin: cleanNin,
+        p_id_document_path: `local_pending_storage/${ninFile.name}`,
+        p_selfie_path: `local_pending_storage/${selfieFile.name}`,
+      })
+
+      if (rpcError) {
+        setIsLoading(false)
+        setErrorMessage(rpcError.message)
+        return
+      }
+
+      const newProviderUser: User = {
+        id: currentAuthUser.id,
+        name: fullName.trim(),
+        email: email.trim(),
+        role: 'provider',
+      }
+
+      setIsLoading(false)
+      onSuccess(newProviderUser)
+    } catch (err: unknown) {
+      setIsLoading(false)
+      const msg = err instanceof Error ? err.message : 'Failed to register provider account.'
+      setErrorMessage(msg)
+    }
   }
 
   const handleBack = () => {
@@ -584,8 +655,8 @@ export function ProviderSignupFlow({
               </p>
             </div>
 
-            <button type="submit" className="provider-primary-btn">
-              Create Provider Account
+            <button type="submit" className="provider-primary-btn" disabled={isLoading}>
+              {isLoading ? 'Creating Account...' : 'Create Provider Account'}
             </button>
           </form>
         )}

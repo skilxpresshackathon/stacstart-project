@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { CloseIcon, EyeIcon, EyeOffIcon } from '../common/Icons'
+import { supabase } from '../../lib/supabase'
 import type { User } from '../../types/marketplace'
 
 export type AuthMode = 'login' | 'register'
@@ -29,6 +30,7 @@ export function AuthModal({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [infoMessage, setInfoMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -42,7 +44,7 @@ export function AuthModal({
 
   if (!isOpen) return null
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMessage('')
     setInfoMessage('')
@@ -61,22 +63,125 @@ export function AuthModal({
         setErrorMessage('Passwords do not match.')
         return
       }
+      if (password.length < 6) {
+        setErrorMessage('Password must be at least 6 characters long.')
+        return
+      }
     }
 
-    // Mock client-side authentication for Day 3
-    const user: User = {
-      id: `usr-${Date.now()}`,
-      name: mode === 'register' ? name.trim() : email.split('@')[0] || 'Customer',
-      email: email.trim(),
-      role: 'customer',
-    }
+    try {
+      setIsLoading(true)
 
-    onAuthSuccess(user)
-    onClose()
+      if (mode === 'login') {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password: password.trim(),
+        })
+
+        if (error) {
+          setIsLoading(false)
+          setErrorMessage(
+            error.message === 'Invalid login credentials'
+              ? 'Invalid email or password.'
+              : error.message
+          )
+          return
+        }
+
+        if (!data.user) {
+          setIsLoading(false)
+          setErrorMessage('Unable to sign in. Please try again.')
+          return
+        }
+
+        // Fetch application profile to obtain the verified role
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, role')
+          .eq('id', data.user.id)
+          .maybeSingle()
+
+        const appUser: User = {
+          id: data.user.id,
+          name: profile?.full_name || data.user.user_metadata?.full_name || email.split('@')[0],
+          email: data.user.email || email.trim(),
+          role: (profile?.role as 'customer' | 'provider' | 'admin') || 'customer',
+        }
+
+        setIsLoading(false)
+        onAuthSuccess(appUser)
+        onClose()
+      } else {
+        // Customer Registration
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password: password.trim(),
+          options: {
+            data: {
+              full_name: name.trim(),
+              role: 'customer',
+            },
+          },
+        })
+
+        if (error) {
+          setIsLoading(false)
+          setErrorMessage(error.message)
+          return
+        }
+
+        if (!data.user) {
+          setIsLoading(false)
+          setErrorMessage('Registration failed. Please try again.')
+          return
+        }
+
+        // Determine user role (defaults to customer)
+        let userRole: 'customer' | 'provider' | 'admin' = 'customer'
+        if (data.session) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .maybeSingle()
+          if (profile?.role) {
+            userRole = profile.role as 'customer' | 'provider' | 'admin'
+          }
+        }
+
+        const appUser: User = {
+          id: data.user.id,
+          name: name.trim(),
+          email: email.trim(),
+          role: userRole,
+        }
+
+        setIsLoading(false)
+        onAuthSuccess(appUser)
+        onClose()
+      }
+    } catch (err: unknown) {
+      setIsLoading(false)
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred.'
+      setErrorMessage(message)
+    }
   }
 
-  const handleForgotPassword = () => {
-    setInfoMessage('Password reset link will be sent to your email once backend is connected.')
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setErrorMessage('Please enter your email address to reset your password.')
+      return
+    }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim())
+      if (error) {
+        setErrorMessage(error.message)
+      } else {
+        setInfoMessage('Password reset instructions have been sent to your email.')
+      }
+    } catch {
+      setErrorMessage('Failed to send password reset email. Please try again.')
+    }
   }
 
   const switchMode = (newMode: AuthMode) => {
@@ -221,8 +326,8 @@ export function AuthModal({
             </div>
           )}
 
-          <button type="submit" className="auth-submit-btn">
-            {mode === 'login' ? 'Sign In' : 'Sign Up'}
+          <button type="submit" className="auth-submit-btn" disabled={isLoading}>
+            {isLoading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Sign Up'}
           </button>
         </form>
 

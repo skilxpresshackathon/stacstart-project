@@ -23,6 +23,7 @@ import { SearchHeader } from '../components/search/SearchHeader'
 import { SearchResultCard } from '../components/search/SearchResultCard'
 import { FilterSheet } from '../components/search/FilterSheet'
 import { SearchIcon } from '../components/common/Icons'
+import { supabase } from '../lib/supabase'
 import {
   CATEGORIES,
   MOCK_MARKETPLACE_ITEMS,
@@ -70,6 +71,7 @@ export function DiscoverPage() {
   const [activeProviderRequest, setActiveProviderRequest] = useState<BookingRequest | null>(null)
   const [chatMessagesMap, setChatMessagesMap] = useState<Record<string, ChatMessage[]>>({})
   const [notification, setNotification] = useState<string | null>(null)
+  const [isAuthLoading, setIsAuthLoading] = useState(true)
 
   // Scroll position preservation for Discover feed
   const lastDiscoverScrollY = useRef(0)
@@ -197,6 +199,69 @@ export function DiscoverPage() {
     setSearchFilters({ ...DEFAULT_SEARCH_FILTERS })
   }
 
+  // Supabase Session Persistence and Auth State Listener
+  useEffect(() => {
+    // 1. Restore existing session on mount
+    supabase.auth
+      .getSession()
+      .then(async ({ data: { session } }) => {
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, full_name, email, role')
+            .eq('id', session.user.id)
+            .maybeSingle()
+
+          const appUser: User = {
+            id: session.user.id,
+            name:
+              profile?.full_name ||
+              session.user.user_metadata?.full_name ||
+              session.user.email?.split('@')[0] ||
+              'User',
+            email: session.user.email || '',
+            role: (profile?.role as 'customer' | 'provider' | 'admin') || 'customer',
+          }
+          setCurrentUser(appUser)
+        }
+        setIsAuthLoading(false)
+      })
+      .catch(() => {
+        setIsAuthLoading(false)
+      })
+
+    // 2. Listen to auth changes (sign in, sign out, token refresh)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, role')
+          .eq('id', session.user.id)
+          .maybeSingle()
+
+        const appUser: User = {
+          id: session.user.id,
+          name:
+            profile?.full_name ||
+            session.user.user_metadata?.full_name ||
+            session.user.email?.split('@')[0] ||
+            'User',
+          email: session.user.email || '',
+          role: (profile?.role as 'customer' | 'provider' | 'admin') || 'customer',
+        }
+        setCurrentUser(appUser)
+      } else {
+        setCurrentUser(null)
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
   // Auth triggers
   const handleOpenAuth = (mode: AuthMode = 'login') => {
     setBookingTargetItem(null)
@@ -209,17 +274,27 @@ export function DiscoverPage() {
     if (bookingTargetItem) {
       setCurrentView('request-service')
       showNotification(`Signed in! Complete your request with ${bookingTargetItem.provider.businessName}.`)
+    } else if (user.role === 'admin') {
+      setCurrentView('admin-dashboard')
+      showNotification(`Signed in as Administrator. Welcome, ${user.name}!`)
+    } else if (user.role === 'provider') {
+      setCurrentView('provider-hub')
+      showNotification(`Signed in as Provider. Welcome back, ${user.name}!`)
     } else {
       showNotification(`Welcome back, ${user.name}!`)
     }
   }
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
     setCurrentUser(null)
     setBookingTargetItem(null)
     setSelectedDetailItem(null)
     setCurrentView('discover')
     setIsSearchActive(false)
+    if (window.location.hash) {
+      history.pushState(null, '', window.location.pathname + window.location.search)
+    }
     showNotification('You have been signed out.')
   }
 
@@ -318,57 +393,115 @@ export function DiscoverPage() {
     }
   }
 
-  // URL hash support for testing / direct viewing of Provider Profile, Bookings, and Chat states
+  // URL hash support and role-based route guards
   useEffect(() => {
+    if (isAuthLoading) return
+
     const checkHash = () => {
-      if (window.location.hash === '#profile') {
+      const hash = window.location.hash
+
+      // Admin routes guard
+      if (
+        hash === '#admin-dashboard' ||
+        hash === '#admin' ||
+        hash === '#video-moderation' ||
+        hash === '#moderation' ||
+        hash === '#review-video' ||
+        hash === '#reject-video'
+      ) {
+        if (currentUser?.role !== 'admin') {
+          showNotification('Access restricted to administrators.')
+          setCurrentView('discover')
+          if (hash) history.pushState(null, '', window.location.pathname + window.location.search)
+          return
+        }
+        if (hash === '#admin-dashboard' || hash === '#admin') setCurrentView('admin-dashboard')
+        else if (hash === '#video-moderation' || hash === '#moderation') setCurrentView('video-moderation')
+        else if (hash === '#review-video') setCurrentView('review-video')
+        else if (hash === '#reject-video') setCurrentView('reject-video')
+        return
+      }
+
+      // Provider routes guard
+      if (
+        hash === '#provider-hub' ||
+        hash === '#provider-hub-active' ||
+        hash === '#provider-hub-new' ||
+        hash === '#client-requests' ||
+        hash.startsWith('#request-details-') ||
+        hash === '#provider-videos' ||
+        hash === '#provider-upload-video'
+      ) {
+        if (currentUser?.role !== 'provider' && currentUser?.role !== 'admin') {
+          showNotification('Please sign in as a service provider to access Provider Hub.')
+          setCurrentView('discover')
+          if (hash) history.pushState(null, '', window.location.pathname + window.location.search)
+          if (!currentUser) setAuthModal({ isOpen: true, mode: 'login' })
+          return
+        }
+        if (
+          hash === '#provider-hub' ||
+          hash === '#provider-hub-active' ||
+          hash === '#provider-hub-new'
+        ) {
+          setCurrentView('provider-hub')
+        } else if (hash === '#client-requests') {
+          setCurrentView('provider-requests')
+        } else if (hash === '#provider-videos') {
+          setCurrentView('provider-videos')
+        } else if (hash === '#provider-upload-video') {
+          setCurrentView('provider-upload-video')
+        } else if (hash === '#request-details-pending') {
+          setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[0])
+          setCurrentView('provider-request-details')
+        } else if (hash === '#request-details-inprogress') {
+          setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[2])
+          setCurrentView('provider-request-details')
+        } else if (hash === '#request-details-completed') {
+          setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[3])
+          setCurrentView('provider-request-details')
+        } else if (hash === '#request-details-declined') {
+          setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[9])
+          setCurrentView('provider-request-details')
+        }
+        return
+      }
+
+      // Customer routes
+      if (hash === '#profile') {
         setSelectedProfileItem(MOCK_MARKETPLACE_ITEMS[0])
         setProfileReturnView('discover')
         setCurrentView('provider-profile')
-      } else if (window.location.hash === '#bookings') {
+      } else if (hash === '#bookings') {
+        if (!currentUser) {
+          showNotification('Please sign in to view your bookings.')
+          setAuthModal({ isOpen: true, mode: 'login' })
+          setCurrentView('discover')
+          history.pushState(null, '', window.location.pathname + window.location.search)
+          return
+        }
         setCurrentView('bookings')
-      } else if (window.location.hash === '#chat-pending') {
+      } else if (hash === '#chat-pending') {
         setActiveChatBooking(createDemoBooking('pending'))
         setCurrentView('chat')
-      } else if (window.location.hash === '#chat-inprogress') {
+      } else if (hash === '#chat-inprogress') {
         setActiveChatBooking(createDemoBooking('in_progress'))
         setCurrentView('chat')
-      } else if (window.location.hash === '#chat-declined') {
+      } else if (hash === '#chat-declined') {
         setActiveChatBooking(createDemoBooking('declined'))
         setCurrentView('chat')
-      } else if (window.location.hash === '#chat-completed') {
+      } else if (hash === '#chat-completed') {
         setActiveChatBooking(createDemoBooking('completed'))
         setCurrentView('chat')
-      } else if (window.location.hash === '#provider-hub' || window.location.hash === '#provider-hub-new' || window.location.hash === '#provider-hub-active') {
-        setCurrentView('provider-hub')
-      } else if (window.location.hash === '#client-requests') {
-        setCurrentView('provider-requests')
-      } else if (window.location.hash === '#request-details-pending') {
-        setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[0])
-        setCurrentView('provider-request-details')
-      } else if (window.location.hash === '#request-details-inprogress') {
-        setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[2])
-        setCurrentView('provider-request-details')
-      } else if (window.location.hash === '#request-details-completed') {
-        setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[3])
-        setCurrentView('provider-request-details')
-      } else if (window.location.hash === '#request-details-declined') {
-        setActiveProviderRequest(INITIAL_PROVIDER_REQUESTS[9])
-        setCurrentView('provider-request-details')
-      } else if (window.location.hash === '#review-video') {
-        setCurrentView('review-video')
-      } else if (window.location.hash === '#reject-video') {
-        setCurrentView('reject-video')
-      } else if (window.location.hash === '#video-moderation' || window.location.hash === '#moderation') {
-        setCurrentView('video-moderation')
-      } else if (window.location.hash === '#admin-dashboard' || window.location.hash === '#admin') {
-        setCurrentView('admin-dashboard')
+      } else if (hash === '#provider-signup') {
+        setCurrentView('provider-signup')
       }
     }
+
     checkHash()
     window.addEventListener('hashchange', checkHash)
     return () => window.removeEventListener('hashchange', checkHash)
-  }, [])
+  }, [currentUser, isAuthLoading])
 
   // Admin Review Video Action Handlers
   const handleBackFromReviewVideo = () => {
@@ -893,23 +1026,8 @@ export function DiscoverPage() {
           onNavigateVideoModeration={() => setCurrentView('video-moderation')}
           onNavigateAdminDashboard={() => setCurrentView('admin-dashboard')}
           onSignOut={handleSignOut}
-          isProvider={
-            currentUser?.role === 'provider' ||
-            window.location.hash.startsWith('#provider-') ||
-            window.location.hash === '#client-requests' ||
-            window.location.hash.startsWith('#request-details-') ||
-            window.location.hash === '#review-video' ||
-            window.location.hash === '#reject-video' ||
-            window.location.hash === '#video-moderation' ||
-            window.location.hash === '#moderation' ||
-            window.location.hash === '#admin-dashboard' ||
-            window.location.hash === '#admin' ||
-            currentView.startsWith('provider-') ||
-            currentView === 'review-video' ||
-            currentView === 'reject-video' ||
-            currentView === 'video-moderation' ||
-            currentView === 'admin-dashboard'
-          }
+          isProvider={currentUser?.role === 'provider' || currentUser?.role === 'admin'}
+          isAdmin={currentUser?.role === 'admin'}
           currentView={currentView}
         />
 
