@@ -5,6 +5,7 @@ import {
   VideoCameraIcon,
   UploadTrayIcon,
 } from '../common/Icons'
+import { uploadProviderVideo } from '../../lib/data/videos'
 
 interface ProviderUploadVideoProps {
   onBack: () => void
@@ -23,6 +24,7 @@ export function ProviderUploadVideo({
   const [priceRange, setPriceRange] = useState('')
   const [description, setDescription] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -41,6 +43,18 @@ export function ProviderUploadVideo({
       if (videoPreviewUrl) {
         URL.revokeObjectURL(videoPreviewUrl)
       }
+
+      const isVideoMime = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v|mkv|ogg)$/i.test(file.name)
+      if (!isVideoMime) {
+        setErrorMessage('Please select a valid video file (MP4, WebM, MOV).')
+        return
+      }
+
+      if (file.size > 50 * 1024 * 1024) {
+        setErrorMessage('Video size exceeds the 50MB limit.')
+        return
+      }
+
       setVideoFile(file)
       setVideoPreviewUrl(URL.createObjectURL(file))
       setErrorMessage(null)
@@ -51,11 +65,22 @@ export function ProviderUploadVideo({
     fileInputRef.current?.click()
   }
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
 
     if (!videoFile) {
       setErrorMessage('Please select a video to upload.')
+      return
+    }
+
+    const isVideoMime = videoFile.type.startsWith('video/') || /\.(mp4|webm|mov|m4v|mkv|ogg)$/i.test(videoFile.name)
+    if (!isVideoMime) {
+      setErrorMessage('Please select a valid video file (MP4, WebM, MOV).')
+      return
+    }
+
+    if (videoFile.size > 50 * 1024 * 1024) {
+      setErrorMessage('Video size exceeds the 50MB limit.')
       return
     }
 
@@ -75,6 +100,32 @@ export function ProviderUploadVideo({
     }
 
     setErrorMessage(null)
+    setIsUploading(true)
+
+    const res = await uploadProviderVideo({
+      file: videoFile,
+      title: title.trim(),
+      priceRange: priceRange.trim(),
+      description: description.trim(),
+    })
+
+    setIsUploading(false)
+
+    if (!res.success) {
+      setErrorMessage(res.error || 'Failed to upload video. Please try again.')
+      return
+    }
+
+    // Clean up temporary preview URL
+    if (videoPreviewUrl) {
+      URL.revokeObjectURL(videoPreviewUrl)
+      setVideoPreviewUrl(null)
+    }
+    setVideoFile(null)
+    setTitle('')
+    setPriceRange('')
+    setDescription('')
+
     onSubmitSuccess()
   }
 
@@ -230,9 +281,10 @@ export function ProviderUploadVideo({
             <button
               type="submit"
               className="provider-upload-submit-btn"
+              disabled={isUploading}
             >
               <UploadTrayIcon className="provider-upload-submit-icon" />
-              <span>Upload Video</span>
+              <span>{isUploading ? 'Uploading...' : 'Upload Video'}</span>
             </button>
           </form>
         </main>

@@ -1,6 +1,12 @@
 import { supabase } from '../supabase'
 import type { MarketplaceItem, Provider, Service, VideoItem } from '../../types/marketplace'
-import type { ProviderVideoItem, ModerationVideoItem, ProviderVideoStatus, ModerationVideoStatus } from '../mockData'
+import {
+  type ProviderVideoItem,
+  type ModerationVideoItem,
+  type ProviderVideoStatus,
+  type ModerationVideoStatus,
+  parsePriceRange,
+} from '../mockData'
 import { formatServicePrice } from './services'
 import { getProviderInitials } from './providers'
 
@@ -32,6 +38,7 @@ interface RawVideoRow {
   description?: string | null
   video_url?: string | null
   thumbnail_url?: string | null
+  storage_path?: string | null
   duration?: string | null
   min_price?: number | null
   max_price?: number | null
@@ -58,6 +65,7 @@ export async function fetchDiscoverMarketplaceItems(): Promise<MarketplaceItem[]
         description,
         video_url,
         thumbnail_url,
+        storage_path,
         duration,
         min_price,
         max_price,
@@ -133,6 +141,20 @@ export async function fetchDiscoverMarketplaceItems(): Promise<MarketplaceItem[]
       const ratingData = providerRatingMap[prov.id]
       const rating = ratingData && ratingData.count > 0 ? ratingData.avg : 0
 
+      let resolvedVideoUrl = row.video_url || undefined
+      if (!resolvedVideoUrl && row.storage_path) {
+        try {
+          const { data: signed } = await supabase.storage
+            .from('provider-videos')
+            .createSignedUrl(row.storage_path, 3600)
+          if (signed?.signedUrl) {
+            resolvedVideoUrl = signed.signedUrl
+          }
+        } catch {
+          // ignore signed URL failure
+        }
+      }
+
       const providerObj: Provider = {
         id: prov.id,
         businessName: prov.business_name,
@@ -164,7 +186,7 @@ export async function fetchDiscoverMarketplaceItems(): Promise<MarketplaceItem[]
         id: row.id,
         providerId: prov.id,
         duration: row.duration || '0:30',
-        videoUrl: row.video_url || undefined,
+        videoUrl: resolvedVideoUrl,
         thumbnailUrl: row.thumbnail_url || undefined,
         title: row.title,
       }
@@ -188,6 +210,7 @@ export async function fetchDiscoverMarketplaceItems(): Promise<MarketplaceItem[]
 /**
  * Fetches all videos for a given provider (for the provider hub manage videos screen).
  * Resolves user profile id to provider id if necessary.
+ * Generates signed URLs for private storage playback.
  */
 export async function fetchProviderVideos(userOrProviderId: string): Promise<ProviderVideoItem[]> {
   try {
@@ -205,7 +228,7 @@ export async function fetchProviderVideos(userOrProviderId: string): Promise<Pro
 
     const { data, error } = await supabase
       .from('videos')
-      .select('id, title, status, thumbnail_url, duration, video_url, created_at')
+      .select('id, title, status, thumbnail_url, duration, video_url, storage_path, created_at')
       .eq('provider_id', actualProviderId)
       .order('created_at', { ascending: false })
 
@@ -216,12 +239,32 @@ export async function fetchProviderVideos(userOrProviderId: string): Promise<Pro
 
     if (!data) return []
 
-    return data.map((v) => ({
-      id: v.id,
-      title: v.title,
-      status: v.status as ProviderVideoStatus,
-      thumbnailUrl: v.thumbnail_url || undefined,
-    }))
+    const items: ProviderVideoItem[] = await Promise.all(
+      data.map(async (v) => {
+        let resolvedVideoUrl = v.video_url || undefined
+        if (!resolvedVideoUrl && v.storage_path) {
+          try {
+            const { data: signed } = await supabase.storage
+              .from('provider-videos')
+              .createSignedUrl(v.storage_path, 3600)
+            if (signed?.signedUrl) {
+              resolvedVideoUrl = signed.signedUrl
+            }
+          } catch {
+            // ignore signed URL errors
+          }
+        }
+
+        return {
+          id: v.id,
+          title: v.title,
+          status: v.status as ProviderVideoStatus,
+          thumbnailUrl: v.thumbnail_url || undefined,
+        }
+      })
+    )
+
+    return items
   } catch (err) {
     console.warn('[Data/Videos] Unexpected error in fetchProviderVideos:', err)
     return []
@@ -230,6 +273,7 @@ export async function fetchProviderVideos(userOrProviderId: string): Promise<Pro
 
 /**
  * Fetches all videos for admin moderation (reads pending, approved, and rejected videos).
+ * Generates signed URLs for moderation preview.
  */
 export async function fetchAdminModerationVideos(): Promise<ModerationVideoItem[]> {
   try {
@@ -241,6 +285,7 @@ export async function fetchAdminModerationVideos(): Promise<ModerationVideoItem[
         status,
         video_url,
         thumbnail_url,
+        storage_path,
         created_at,
         provider:providers (
           business_name
@@ -257,23 +302,240 @@ export async function fetchAdminModerationVideos(): Promise<ModerationVideoItem[
 
     type ProviderNameRel = { business_name?: string } | null
 
-    return data.map((v) => {
-      const provRel = v.provider as unknown as ProviderNameRel
-      let status: ModerationVideoStatus = 'pending'
-      if (v.status === 'approved') status = 'approved'
-      else if (v.status === 'rejected') status = 'rejected'
+    const items: ModerationVideoItem[] = await Promise.all(
+      data.map(async (v) => {
+        const provRel = v.provider as unknown as ProviderNameRel
+        let status: ModerationVideoStatus = 'pending'
+        if (v.status === 'approved') status = 'approved'
+        else if (v.status === 'rejected') status = 'rejected'
 
-      return {
-        id: v.id,
-        title: v.title,
-        providerName: provRel?.business_name || 'Service Provider',
-        status,
-        videoUrl: v.video_url || undefined,
-        thumbnailUrl: v.thumbnail_url || undefined,
-      }
-    })
+        let resolvedVideoUrl = v.video_url || undefined
+        if (!resolvedVideoUrl && v.storage_path) {
+          try {
+            const { data: signed } = await supabase.storage
+              .from('provider-videos')
+              .createSignedUrl(v.storage_path, 3600)
+            if (signed?.signedUrl) {
+              resolvedVideoUrl = signed.signedUrl
+            }
+          } catch {
+            // ignore signed URL errors
+          }
+        }
+
+        return {
+          id: v.id,
+          title: v.title,
+          providerName: provRel?.business_name || 'Service Provider',
+          status,
+          videoUrl: resolvedVideoUrl,
+          thumbnailUrl: v.thumbnail_url || undefined,
+        }
+      })
+    )
+
+    return items
   } catch (err) {
     console.warn('[Data/Videos] Unexpected error in fetchAdminModerationVideos:', err)
     return []
+  }
+}
+
+export interface UploadProviderVideoInput {
+  file: File
+  title: string
+  priceRange: string
+  description: string
+}
+
+export interface UploadProviderVideoResult {
+  success: boolean
+  videoId?: string
+  storagePath?: string
+  error?: string
+}
+
+/**
+ * Validates, uploads a video file to Supabase Storage, and inserts a video row into public.videos.
+ * Strict ownership-based path: {auth_user_id}/{unique_file_name}
+ * Initial status: 'under_review'
+ */
+export async function uploadProviderVideo(
+  input: UploadProviderVideoInput
+): Promise<UploadProviderVideoResult> {
+  try {
+    const { file, title, priceRange, description } = input
+
+    // 1. Verify user authentication
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return { success: false, error: 'You must be signed in to upload a video.' }
+    }
+
+    // 2. Resolve authenticated user's provider record
+    const { data: provider, error: provError } = await supabase
+      .from('providers')
+      .select('id')
+      .eq('profile_id', user.id)
+      .maybeSingle()
+
+    if (provError || !provider) {
+      return {
+        success: false,
+        error: 'Provider record not found for the authenticated user.',
+      }
+    }
+
+    // 3. Validate selected video
+    if (!file) {
+      return { success: false, error: 'Please select a video file.' }
+    }
+
+    const isVideoMime = file.type.startsWith('video/')
+    const hasVideoExt = /\.(mp4|webm|mov|m4v|mkv|ogg)$/i.test(file.name)
+    if (!isVideoMime && !hasVideoExt) {
+      return {
+        success: false,
+        error: 'The selected file is not a valid video. Please choose an MP4, WebM, or MOV file.',
+      }
+    }
+
+    // Client-side file size limit: 50MB (52,428,800 bytes)
+    const MAX_FILE_SIZE = 50 * 1024 * 1024
+    if (file.size > MAX_FILE_SIZE) {
+      return {
+        success: false,
+        error: 'Video file size exceeds the 50MB limit.',
+      }
+    }
+
+    // 4. Generate collision-safe ownership path: {auth_user_id}/{uuid}.{ext}
+    const ext = file.name.includes('.')
+      ? file.name.split('.').pop()?.toLowerCase() || 'mp4'
+      : 'mp4'
+    const uniqueFileName = `${crypto.randomUUID()}.${ext}`
+    const storagePath = `${user.id}/${uniqueFileName}`
+
+    // 5. Upload actual file to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('provider-videos')
+      .upload(storagePath, file, {
+        contentType: file.type || 'video/mp4',
+        upsert: false,
+      })
+
+    if (uploadError) {
+      console.warn('[Data/Videos] Storage upload error:', uploadError.message)
+      return { success: false, error: `Upload to storage failed: ${uploadError.message}` }
+    }
+
+    // 6. Parse price range
+    const { min, max } = parsePriceRange(priceRange)
+
+    // 7. Insert real row into public.videos
+    const { data: insertedVideo, error: insertError } = await supabase
+      .from('videos')
+      .insert({
+        provider_id: provider.id,
+        title: title.trim(),
+        description: description.trim(),
+        min_price: min,
+        max_price: max > min ? max : min,
+        storage_path: storagePath,
+        status: 'under_review',
+      })
+      .select('id, storage_path')
+      .single()
+
+    if (insertError) {
+      console.warn('[Data/Videos] Database insert error:', insertError.message)
+      // Clean up orphaned storage object
+      await supabase.storage.from('provider-videos').remove([storagePath])
+      return { success: false, error: `Failed to save video record: ${insertError.message}` }
+    }
+
+    return {
+      success: true,
+      videoId: insertedVideo.id,
+      storagePath: insertedVideo.storage_path,
+    }
+  } catch (err) {
+    console.warn('[Data/Videos] Unexpected error in uploadProviderVideo:', err)
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Unexpected error during video upload.',
+    }
+  }
+}
+
+/**
+ * Admin action: Approve a video for the marketplace.
+ * Enforces admin authorization via RLS and DB trigger.
+ */
+export async function moderateApproveVideo(
+  videoId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    const { error } = await supabase
+      .from('videos')
+      .update({
+        status: 'approved',
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user?.id || null,
+      })
+      .eq('id', videoId)
+
+    if (error) {
+      console.warn('[Data/Videos] Error approving video:', error.message)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true }
+  } catch (err) {
+    console.warn('[Data/Videos] Unexpected error approving video:', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
+  }
+}
+
+/**
+ * Admin action: Reject a video with a reason.
+ * Enforces admin authorization via RLS and DB trigger.
+ */
+export async function moderateRejectVideo(
+  videoId: string,
+  reason: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    const { error } = await supabase
+      .from('videos')
+      .update({
+        status: 'rejected',
+        rejection_reason: reason,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user?.id || null,
+      })
+      .eq('id', videoId)
+
+    if (error) {
+      console.warn('[Data/Videos] Error rejecting video:', error.message)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true }
+  } catch (err) {
+    console.warn('[Data/Videos] Unexpected error rejecting video:', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
   }
 }

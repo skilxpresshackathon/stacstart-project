@@ -24,7 +24,13 @@ import { SearchResultCard } from '../components/search/SearchResultCard'
 import { FilterSheet } from '../components/search/FilterSheet'
 import { SearchIcon } from '../components/common/Icons'
 import { supabase } from '../lib/supabase'
-import { fetchDiscoverMarketplaceItems, fetchProviderVideos, fetchAdminModerationVideos } from '../lib/data/videos'
+import {
+  fetchDiscoverMarketplaceItems,
+  fetchProviderVideos,
+  fetchAdminModerationVideos,
+  moderateApproveVideo,
+  moderateRejectVideo,
+} from '../lib/data/videos'
 import { fetchProviderDetails } from '../lib/data/providers'
 import {
   CATEGORIES,
@@ -679,12 +685,18 @@ export function DiscoverPage() {
     }
   }
 
-  const handleApproveVideo = (item: ReviewVideoItem) => {
+  const handleApproveVideo = async (item: ReviewVideoItem) => {
+    const res = await moderateApproveVideo(item.id)
+    if (!res.success) {
+      showNotification(`Error approving video: ${res.error}`)
+      return
+    }
     setModerationVideos((prev) =>
       prev.map((v) =>
         v.id === item.id || v.title === item.serviceName ? { ...v, status: 'approved' } : v
       )
     )
+    fetchDiscoverMarketplaceItems().then(setMarketplaceItems).catch(console.warn)
     showNotification(`Video for "${item.serviceName}" has been approved!`)
     handleBackFromReviewVideo()
   }
@@ -708,7 +720,12 @@ export function DiscoverPage() {
     }
   }
 
-  const handleConfirmRejectVideo = (item: ReviewVideoItem, reason: RejectionReason) => {
+  const handleConfirmRejectVideo = async (item: ReviewVideoItem, reason: RejectionReason) => {
+    const res = await moderateRejectVideo(item.id, reason)
+    if (!res.success) {
+      showNotification(`Error rejecting video: ${res.error}`)
+      return
+    }
     setModerationVideos((prev) =>
       prev.map((v) =>
         v.id === item.id || v.title === item.serviceName ? { ...v, status: 'rejected' } : v
@@ -1090,8 +1107,13 @@ export function DiscoverPage() {
             onBack={() => setCurrentView(uploadVideoReturnView)}
             onMenuClick={() => setIsDrawerOpen(true)}
             onSubmitSuccess={() => {
-              setCurrentView('provider-hub')
-              showNotification('Video saved successfully!')
+              if (currentUser) {
+                fetchProviderVideos(currentUser.id)
+                  .then(setProviderVideosList)
+                  .catch(console.warn)
+              }
+              setCurrentView('provider-videos')
+              showNotification('Video uploaded successfully and submitted for review!')
             }}
           />
         ) : currentView === 'review-video' ? (

@@ -10,7 +10,6 @@ import {
   CloseIcon,
 } from '../common/Icons'
 import {
-  INITIAL_PROVIDER_VIDEOS,
   type ProviderVideoItem,
   type ProviderVideoStatus,
 } from '../../lib/mockData'
@@ -25,7 +24,7 @@ interface ProviderVideosProps {
 }
 
 export function ProviderVideos({
-  videos = INITIAL_PROVIDER_VIDEOS,
+  videos = [],
   onBack,
   onMenuClick,
   onUploadVideo,
