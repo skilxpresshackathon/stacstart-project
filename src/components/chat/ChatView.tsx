@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, type FormEvent } from 'react'
+import { useState, useRef, useEffect, type FormEvent } from 'react'
 import {
   ChevronLeftIcon,
   LocationPinIcon,
@@ -31,161 +31,12 @@ export function ChatView({
   messages: externalMessages,
   onSendMessage,
 }: ChatViewProps) {
-  // Derive default initial conversation matching the approved PDFs if no external messages exist
-  const defaultInitialMessages = useMemo<ChatMessage[]>(() => {
-    const status = booking.status
-    if (status === 'completed') {
-      return [
-        {
-          id: 'm1',
-          sender: 'customer',
-          text: "Hi! I'd like to follow up on my request",
-          timestamp: '9:00AM',
-          dateLabel: 'Dec 12',
-        },
-        {
-          id: 'm2',
-          sender: 'provider',
-          text: 'Hi! Let me check my schedule and get back to you shortly.',
-          timestamp: '9:10AM',
-          dateLabel: 'Dec 12',
-        },
-        {
-          id: 'm3',
-          sender: 'provider',
-          text: "Dec 14 works for me. I've accepted your request.",
-          timestamp: '9:15AM',
-          dateLabel: 'Dec 12',
-        },
-        {
-          id: 'm4',
-          sender: 'customer',
-          text: 'Perfect, thank you!',
-          timestamp: '9:30AM',
-          dateLabel: 'Dec 12',
-        },
-        {
-          id: 'm5',
-          sender: 'provider',
-          text: "I'm on my way to the venue now.",
-          timestamp: '11:00AM',
-          dateLabel: 'Today',
-        },
-        {
-          id: 'm6',
-          sender: 'customer',
-          text: 'Great, see you soon!',
-          timestamp: '11:10AM',
-          dateLabel: 'Today',
-        },
-        {
-          id: 'm7',
-          sender: 'provider',
-          text: 'All done! It was a pleasure working with you today.',
-          timestamp: '4:02PM',
-          dateLabel: 'Today',
-        },
-      ]
-    }
-
-    if (status === 'in_progress') {
-      return [
-        {
-          id: 'm1',
-          sender: 'customer',
-          text: "Hi! I'd like to follow up on my request",
-          timestamp: '9:00AM',
-          dateLabel: 'Dec 12',
-        },
-        {
-          id: 'm2',
-          sender: 'provider',
-          text: 'Hi! Let me check my schedule and get back to you shortly.',
-          timestamp: '9:10AM',
-          dateLabel: 'Dec 12',
-        },
-        {
-          id: 'm3',
-          sender: 'provider',
-          text: "Dec 14 works for me. I've accepted your request.",
-          timestamp: '9:15AM',
-          dateLabel: 'Dec 12',
-        },
-        {
-          id: 'm4',
-          sender: 'customer',
-          text: 'Perfect, thank you!',
-          timestamp: '9:30AM',
-          dateLabel: 'Dec 12',
-        },
-        {
-          id: 'm5',
-          sender: 'provider',
-          text: "I'm on my way to the venue now.",
-          timestamp: '11:00AM',
-          dateLabel: 'Today',
-        },
-        {
-          id: 'm6',
-          sender: 'customer',
-          text: 'Great, see you soon!',
-          timestamp: '11:10AM',
-          dateLabel: 'Today',
-        },
-      ]
-    }
-
-    if (status === 'declined') {
-      return [
-        {
-          id: 'm1',
-          sender: 'customer',
-          text: "Hi! I'd like to follow up on my request",
-          timestamp: '10:00AM',
-          dateLabel: 'Today',
-        },
-        {
-          id: 'm2',
-          sender: 'provider',
-          text: 'Hi! Let me check my schedule and get back to you shortly.',
-          timestamp: '10:10AM',
-          dateLabel: 'Today',
-        },
-        {
-          id: 'm3',
-          sender: 'provider',
-          text: "I'm so sorry, I'm not available on Dec 14. I'll have to decline this request.",
-          timestamp: '10:10AM',
-          dateLabel: 'Today',
-        },
-      ]
-    }
-
-    // Default / Pending / Accepted
-    return [
-      {
-        id: 'm1',
-        sender: 'customer',
-        text: "Hi! I'd like to follow up on my request",
-        timestamp: '10:00AM',
-        dateLabel: 'Today',
-      },
-      {
-        id: 'm2',
-        sender: 'provider',
-        text: 'Hi! Let me check my schedule and get back to you shortly.',
-        timestamp: '10:10AM',
-        dateLabel: 'Today',
-      },
-    ]
-  }, [booking.status])
-
-  const [localMessages, setLocalMessages] = useState<ChatMessage[]>(defaultInitialMessages)
+  const [localMessages, setLocalMessages] = useState<ChatMessage[]>([])
   const [inputText, setInputText] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Use external messages if provided, otherwise local state
-  const activeMessages = externalMessages || localMessages
+  const activeMessages = externalMessages !== undefined ? externalMessages : localMessages
 
   const isReadOnly = booking.status === 'declined' || booking.status === 'completed' || booking.status === 'cancelled'
 
@@ -312,36 +163,50 @@ export function ChatView({
 
         {/* Message Stream */}
         <div className="chat-messages-stream" role="log" aria-label="Conversation messages">
-          {activeMessages.map((msg, index) => {
-            const showDate =
-              msg.dateLabel &&
-              (index === 0 || activeMessages[index - 1]?.dateLabel !== msg.dateLabel)
+          {activeMessages.length === 0 ? (
+            <div
+              className="chat-empty-conversation"
+              style={{
+                textAlign: 'center',
+                padding: '40px 16px',
+                color: '#94A3B8',
+                fontSize: '14px',
+              }}
+            >
+              <p>No messages yet. Send a message to start the conversation.</p>
+            </div>
+          ) : (
+            activeMessages.map((msg, index) => {
+              const showDate =
+                msg.dateLabel &&
+                (index === 0 || activeMessages[index - 1]?.dateLabel !== msg.dateLabel)
 
-            const isCustomer = msg.sender === 'customer'
+              const isCustomer = msg.sender === 'customer'
 
-            return (
-              <div key={msg.id} className="chat-message-group">
-                {showDate && (
-                  <div className="chat-date-separator">
-                    <span>{msg.dateLabel}</span>
-                  </div>
-                )}
-
-                <div className={`chat-message-row ${isCustomer ? 'row-customer' : 'row-provider'}`}>
-                  {!isCustomer && (
-                    <div className="chat-message-avatar" aria-hidden="true">
-                      {providerInitials}
+              return (
+                <div key={msg.id} className="chat-message-group">
+                  {showDate && (
+                    <div className="chat-date-separator">
+                      <span>{msg.dateLabel}</span>
                     </div>
                   )}
 
-                  <div className={`chat-bubble ${isCustomer ? 'bubble-customer' : 'bubble-provider'}`}>
-                    <p className="chat-bubble-text">{msg.text}</p>
-                    <span className="chat-bubble-timestamp">{msg.timestamp}</span>
+                  <div className={`chat-message-row ${isCustomer ? 'row-customer' : 'row-provider'}`}>
+                    {!isCustomer && (
+                      <div className="chat-message-avatar" aria-hidden="true">
+                        {providerInitials}
+                      </div>
+                    )}
+
+                    <div className={`chat-bubble ${isCustomer ? 'bubble-customer' : 'bubble-provider'}`}>
+                      <p className="chat-bubble-text">{msg.text}</p>
+                      <span className="chat-bubble-timestamp">{msg.timestamp}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })
+          )}
           <div ref={messagesEndRef} />
         </div>
       </main>

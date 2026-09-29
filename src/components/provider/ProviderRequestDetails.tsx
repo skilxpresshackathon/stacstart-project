@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, type FormEvent } from 'react'
+import { useState, useRef, useEffect, type FormEvent } from 'react'
 import {
   ChevronLeftIcon,
   LocationPinIcon,
@@ -39,111 +39,12 @@ export function ProviderRequestDetails({
   messages: externalMessages,
   onSendMessage,
 }: ProviderRequestDetailsProps) {
-  // Derive default messages based on request status
-  const defaultInitialMessages = useMemo<ChatMessage[]>(() => {
-    const status = request.status
-    if (status === 'completed') {
-      return [
-        {
-          id: 'm1',
-          sender: 'customer',
-          text: "Hi! I'd like to follow up on my request",
-          timestamp: '9:00AM',
-          dateLabel: 'Dec 12',
-        },
-        {
-          id: 'm2',
-          sender: 'provider',
-          text: 'Hi! Let me check my schedule and get back to you shortly.',
-          timestamp: '9:10AM',
-          dateLabel: 'Dec 12',
-        },
-        {
-          id: 'm3',
-          sender: 'provider',
-          text: "Dec 14 works for me. I've accepted your request.",
-          timestamp: '9:15AM',
-          dateLabel: 'Dec 12',
-        },
-        {
-          id: 'm4',
-          sender: 'customer',
-          text: 'Perfect, thank you!',
-          timestamp: '9:30AM',
-          dateLabel: 'Dec 12',
-        },
-        {
-          id: 'm5',
-          sender: 'provider',
-          text: "All done! It was a pleasure working with you today.",
-          timestamp: '4:02PM',
-          dateLabel: 'Today',
-        },
-      ]
-    }
 
-    if (status === 'in_progress') {
-      return [
-        {
-          id: 'm1',
-          sender: 'customer',
-          text: "Hi! I'd like to follow up on my request",
-          timestamp: '9:00AM',
-          dateLabel: 'Dec 12',
-        },
-        {
-          id: 'm2',
-          sender: 'provider',
-          text: 'Hi! Let me check my schedule and get back to you shortly.',
-          timestamp: '9:10AM',
-          dateLabel: 'Dec 12',
-        },
-        {
-          id: 'm3',
-          sender: 'provider',
-          text: "Dec 14 works for me. I've accepted your request.",
-          timestamp: '9:15AM',
-          dateLabel: 'Dec 12',
-        },
-      ]
-    }
-
-    if (status === 'declined') {
-      return [
-        {
-          id: 'm1',
-          sender: 'customer',
-          text: "Hi! I'd like to follow up on my request",
-          timestamp: '10:00AM',
-          dateLabel: 'Today',
-        },
-        {
-          id: 'm2',
-          sender: 'provider',
-          text: "I'm so sorry, I'm not available on that date. I'll have to decline this request.",
-          timestamp: '10:15AM',
-          dateLabel: 'Today',
-        },
-      ]
-    }
-
-    // Default / Pending
-    return [
-      {
-        id: 'm1',
-        sender: 'customer',
-        text: "Hi! I'd like to follow up on my request",
-        timestamp: '10:00AM',
-        dateLabel: 'Today',
-      },
-    ]
-  }, [request.status])
-
-  const [localMessages, setLocalMessages] = useState<ChatMessage[]>(defaultInitialMessages)
+  const [localMessages, setLocalMessages] = useState<ChatMessage[]>([])
   const [inputText, setInputText] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const activeMessages = externalMessages || localMessages
+  const activeMessages = externalMessages !== undefined ? externalMessages : localMessages
 
   const isReadOnly = request.status === 'declined' || request.status === 'completed' || request.status === 'canceled' || request.status === 'cancelled'
 
@@ -355,28 +256,41 @@ export function ProviderRequestDetails({
 
           {/* Messages list */}
           <div className="request-chat-messages">
-            {activeMessages.map((msg, index) => {
-              const isProvider = msg.sender === 'provider'
-              const showDate =
-                index === 0 ||
-                (msg.dateLabel && msg.dateLabel !== activeMessages[index - 1]?.dateLabel)
+            {activeMessages.length === 0 ? (
+              <div
+                style={{
+                  textAlign: 'center',
+                  padding: '40px 16px',
+                  color: '#94A3B8',
+                  fontSize: '14px',
+                }}
+              >
+                <p>No messages yet. Send a message to start the conversation.</p>
+              </div>
+            ) : (
+              activeMessages.map((msg, index) => {
+                const isProvider = msg.sender === 'provider'
+                const showDate =
+                  index === 0 ||
+                  (msg.dateLabel && msg.dateLabel !== activeMessages[index - 1]?.dateLabel)
 
-              return (
-                <div key={msg.id} className="chat-msg-wrapper">
-                  {showDate && msg.dateLabel && (
-                    <div className="chat-date-separator">
-                      <span>{msg.dateLabel}</span>
-                    </div>
-                  )}
-                  <div className={`chat-bubble-row ${isProvider ? 'row-provider' : 'row-customer'}`}>
-                    <div className={`chat-bubble ${isProvider ? 'bubble-provider' : 'bubble-customer'}`}>
-                      <p className="chat-bubble-text">{msg.text}</p>
-                      <span className="chat-bubble-time">{msg.timestamp}</span>
+                return (
+                  <div key={msg.id} className="chat-msg-wrapper">
+                    {showDate && msg.dateLabel && (
+                      <div className="chat-date-separator">
+                        <span>{msg.dateLabel}</span>
+                      </div>
+                    )}
+                    <div className={`chat-bubble-row ${isProvider ? 'row-provider' : 'row-customer'}`}>
+                      <div className={`chat-bubble ${isProvider ? 'bubble-provider' : 'bubble-customer'}`}>
+                        <p className="chat-bubble-text">{msg.text}</p>
+                        <span className="chat-bubble-time">{msg.timestamp}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })
+            )}
             <div ref={messagesEndRef} />
           </div>
         </div>

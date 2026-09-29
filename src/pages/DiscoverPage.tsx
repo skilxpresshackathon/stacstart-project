@@ -37,6 +37,11 @@ import {
   fetchCustomerReviewedBookingIds,
   fetchReviewForBooking,
 } from '../lib/data/reviews'
+import {
+  fetchBookingMessages,
+  sendMessage,
+  subscribeToBookingMessages,
+} from '../lib/data/messages'
 import { ReviewBookingModal } from '../components/booking/ReviewBookingModal'
 import type { Review } from '../types/marketplace'
 import {
@@ -108,6 +113,42 @@ export function DiscoverPage() {
   const [reviewTargetBooking, setReviewTargetBooking] = useState<BookingRequest | null>(null)
   const [reviewTargetExisting, setReviewTargetExisting] = useState<Review | null>(null)
   const [reviewedBookingIds, setReviewedBookingIds] = useState<Set<string>>(new Set())
+
+  // Active Chat / Messaging Subscriptions
+  useEffect(() => {
+    const booking = activeChatBooking || activeProviderRequest
+    if (!booking) return
+
+    let isMounted = true
+
+    // 1. Fetch initial real messages from Supabase
+    fetchBookingMessages(booking.id, booking.customerId).then((res) => {
+      if (isMounted && res.success) {
+        setChatMessagesMap((prev) => ({
+          ...prev,
+          [booking.id]: res.messages,
+        }))
+      }
+    })
+
+    // 2. Realtime subscription (clean up on exit or booking change)
+    const unsubscribe = subscribeToBookingMessages(booking.id, booking.customerId, (newMsg) => {
+      if (!isMounted) return
+      setChatMessagesMap((prev) => {
+        const existing = prev[booking.id] || []
+        if (existing.some((m) => m.id === newMsg.id)) return prev
+        return {
+          ...prev,
+          [booking.id]: [...existing, newMsg],
+        }
+      })
+    })
+
+    return () => {
+      isMounted = false
+      unsubscribe()
+    }
+  }, [activeChatBooking, activeProviderRequest])
 
   // Scroll position preservation for Discover feed
   const lastDiscoverScrollY = useRef(0)
@@ -796,41 +837,39 @@ export function DiscoverPage() {
   }
 
   const handleBackFromChat = () => {
+    setActiveChatBooking(null)
     setCurrentView('bookings')
     if (window.location.hash.startsWith('#chat')) {
       history.pushState(null, '', window.location.pathname + window.location.search)
     }
   }
 
-  const handleSendMessageInChat = (
+  const handleSendMessageInChat = async (
     bookingId: string,
-    text: string,
-    sender: 'customer' | 'provider' = 'customer'
+    text: string
   ) => {
-    const now = new Date()
-    const timeStr = now
-      .toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      })
-      .replace(' ', '')
+    const booking =
+      bookings.find((b) => b.id === bookingId) ||
+      providerRequests.find((r) => r.id === bookingId) ||
+      activeChatBooking ||
+      activeProviderRequest
 
-    const newMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      sender,
-      text,
-      timestamp: timeStr,
-      dateLabel: 'Today',
+    const customerId = booking?.customerId
+
+    const res = await sendMessage(bookingId, text, customerId)
+    if (!res.success) {
+      showNotification(res.error || 'Failed to send message.')
+      return
     }
 
-    setChatMessagesMap((prev) => {
-      const existing = prev[bookingId]
-      if (existing) {
+    if (res.message) {
+      const newMsg = res.message
+      setChatMessagesMap((prev) => {
+        const existing = prev[bookingId] || []
+        if (existing.some((m) => m.id === newMsg.id)) return prev
         return { ...prev, [bookingId]: [...existing, newMsg] }
-      }
-      return { ...prev, [bookingId]: [newMsg] }
-    })
+      })
+    }
   }
 
   const handleReviewBooking = async (booking: BookingRequest) => {
@@ -1234,13 +1273,16 @@ export function DiscoverPage() {
         ) : currentView === 'provider-request-details' && activeProviderRequest ? (
           <ProviderRequestDetails
             request={activeProviderRequest}
-            onBack={() => setCurrentView('provider-requests')}
+            onBack={() => {
+              setActiveProviderRequest(null)
+              setCurrentView('provider-requests')
+            }}
             onAccept={handleAcceptProviderRequest}
             onDecline={handleDeclineProviderRequest}
             onMarkInProgress={handleMarkInProgressProviderRequest}
             onMarkComplete={handleMarkCompleteProviderRequest}
             messages={chatMessagesMap[activeProviderRequest.id]}
-            onSendMessage={(text) => handleSendMessageInChat(activeProviderRequest.id, text, 'provider')}
+            onSendMessage={(text) => handleSendMessageInChat(activeProviderRequest.id, text)}
           />
         ) : currentView === 'bookings' ? (
           <BookingsView
