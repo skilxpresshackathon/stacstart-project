@@ -542,6 +542,22 @@ export const DEFAULT_ADMIN_METRICS: AdminPlatformMetrics = {
   verifiedUsers: 840,
 }
 
+export interface SiteVisitDataPoint {
+  day: string
+  visits: number
+  selected?: boolean
+}
+
+export const DEFAULT_SITE_VISITS: SiteVisitDataPoint[] = [
+  { day: 'Mon', visits: 300 },
+  { day: 'Tue', visits: 255 },
+  { day: 'Wed', visits: 225 },
+  { day: 'Thu', visits: 200, selected: true },
+  { day: 'Fri', visits: 235 },
+  { day: 'Sat', visits: 270 },
+  { day: 'Sun', visits: 315 },
+]
+
 
 
 

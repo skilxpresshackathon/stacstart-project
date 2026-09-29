@@ -6502,28 +6502,28 @@ body {
 }
 
 /* ==========================================================================
-   ADMIN DASHBOARD (Task F)
+   ADMIN DASHBOARD (Task 21 - Designer Reference Polish)
    ========================================================================== */
 
 .admin-dashboard-screen {
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  background-color: #F8FAFC;
+  background-color: #F3F4F6;
 }
 
 .admin-dashboard-container {
   width: 100%;
-  max-width: 640px;
+  max-width: 520px;
   min-height: 100vh;
-  background-color: #F8FAFC;
+  background-color: #F3F4F6;
   display: flex;
   flex-direction: column;
 }
 
 .admin-dashboard-header {
-  height: 64px;
-  background-color: #1D4ED8;
+  height: 60px;
+  background-color: #1A56DB;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -6547,22 +6547,23 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   flex-shrink: 0;
 }
 
 .admin-dashboard-badge-icon {
   width: 18px;
   height: 18px;
-  color: #1D4ED8;
+  color: #1A56DB;
+  stroke-width: 2.8;
 }
 
 .admin-dashboard-title {
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 700;
   color: #FFFFFF;
   margin: 0;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.2px;
 }
 
 .admin-dashboard-menu-btn {
@@ -6585,16 +6586,16 @@ body {
 }
 
 .admin-dashboard-menu-icon {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   color: #FFFFFF;
 }
 
 .admin-dashboard-content {
-  padding: 20px 16px 36px;
+  padding: 20px 16px 40px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 20px;
 }
 
 .admin-dashboard-section {
@@ -6603,14 +6604,15 @@ body {
 }
 
 .admin-section-heading {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   color: #64748B;
   letter-spacing: 0.5px;
-  margin: 0 0 12px 0;
+  margin: 0 0 10px 0;
   text-transform: uppercase;
 }
 
+/* Metric Cards */
 .admin-metrics-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -6618,81 +6620,210 @@ body {
 }
 
 .admin-metric-card {
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 16px 14px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  border: none;
 }
 
 .admin-metric-card.metric-total-users {
-  background-color: #EEF2FF;
-  border: 1px solid #C7D2FE;
+  background-color: #EBF2FE;
 }
 
 .admin-metric-card.metric-total-users .admin-metric-label {
   font-size: 11.5px;
   font-weight: 700;
-  color: #4F46E5;
+  color: #1D4ED8;
   letter-spacing: 0.4px;
 }
 
 .admin-metric-card.metric-total-users .admin-metric-value {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 800;
-  color: #3730A3;
+  color: #1E40AF;
   margin-top: 6px;
   line-height: 1.1;
   letter-spacing: -0.5px;
 }
 
 .admin-metric-card.metric-verified-users {
-  background-color: #ECFDF5;
-  border: 1px solid #A7F3D0;
+  background-color: #EAF5EE;
 }
 
 .admin-metric-card.metric-verified-users .admin-metric-label {
   font-size: 11.5px;
   font-weight: 700;
-  color: #059669;
+  color: #047857;
   letter-spacing: 0.4px;
 }
 
 .admin-metric-card.metric-verified-users .admin-metric-value {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 800;
-  color: #065F46;
+  color: #047857;
   margin-top: 6px;
   line-height: 1.1;
   letter-spacing: -0.5px;
 }
 
+/* Site Visits Card */
+.admin-site-visits-card {
+  background-color: #FFFFFF;
+  border: none;
+  border-radius: 16px;
+  padding: 20px 18px 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.admin-site-visits-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.admin-site-visits-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.admin-site-visits-period {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #9CA3AF;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.admin-site-visits-period:hover {
+  color: #6B7280;
+}
+
+.admin-site-visits-chevron {
+  width: 14px;
+  height: 14px;
+  color: #9CA3AF;
+}
+
+.admin-site-visits-chart-wrap {
+  width: 100%;
+  position: relative;
+  margin-top: 4px;
+}
+
+.admin-site-visits-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.admin-chart-y-label {
+  font-size: 11px;
+  fill: #9CA3AF;
+  font-weight: 500;
+}
+
+.admin-chart-gridline {
+  stroke: #F1F5F9;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.admin-chart-active-guide {
+  stroke: #F97316;
+  stroke-width: 1.5;
+  stroke-dasharray: 2 2;
+}
+
+.admin-chart-curve {
+  stroke: #EA580C;
+  stroke-width: 2.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-chart-dot {
+  fill: #EA580C;
+  transition: transform 0.15s ease;
+}
+
+.admin-chart-dot:hover {
+  transform: scale(1.4);
+  transform-origin: center;
+}
+
+.admin-chart-active-dot {
+  fill: #EA580C;
+  stroke: #FFFFFF;
+  stroke-width: 2.5;
+}
+
+.admin-chart-active-val {
+  font-size: 14px;
+  font-weight: 700;
+  fill: #0F172A;
+}
+
+.admin-chart-x-label {
+  font-size: 11.5px;
+  fill: #9CA3AF;
+  font-weight: 500;
+  transition: fill 0.15s ease;
+}
+
+.admin-chart-x-label:hover {
+  fill: #4B5563;
+}
+
+.admin-chart-x-label.is-selected {
+  font-weight: 700;
+  fill: #0F172A;
+}
+
+/* Action Cards (Video Moderation & ID Verification) */
 .admin-action-card {
   background-color: #FFFFFF;
-  border: 1px solid #CBD5E1;
-  border-radius: 14px;
+  border: none;
+  border-radius: 16px;
   padding: 20px 18px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .admin-card-title {
-  font-size: 17.5px;
+  font-size: 18px;
   font-weight: 700;
-  color: #0F172A;
   margin: 0 0 10px 0;
   letter-spacing: -0.2px;
+}
+
+.admin-video-mod-title {
+  color: #1D4ED8;
+}
+
+.admin-id-verif-title {
+  color: #EA580C;
 }
 
 .admin-card-desc {
   font-size: 14px;
   line-height: 1.5;
-  color: #475569;
+  color: #374151;
   margin: 0 0 18px 0;
 }
 
 .admin-action-btn {
-  height: 40px;
-  padding: 0 18px;
+  height: 42px;
+  padding: 0 20px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
@@ -6709,21 +6840,21 @@ body {
 }
 
 .admin-review-videos-btn {
-  border: 1px solid #1D4ED8;
+  border: 1.5px solid #2563EB;
   color: #1D4ED8;
 }
 
 .admin-review-videos-btn:hover {
   background-color: #EFF6FF;
-  border-color: #1E40AF;
+  border-color: #1D4ED8;
 }
 
 .admin-review-id-btn {
-  border: 1px solid #F59E0B;
-  color: #D97706;
+  border: 1.5px solid #EA580C;
+  color: #EA580C;
 }
 
 .admin-review-id-btn:hover {
-  background-color: #FFFBEB;
-  border-color: #B45309;
+  background-color: #FFF7ED;
+  border-color: #C2410C;
 }

@@ -319,6 +319,25 @@ export function ChevronLeftIcon({ className = 'icon', ...props }: SVGProps<SVGSV
   )
 }
 
+export function ChevronRightIcon({ className = 'icon', ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+    >
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  )
+}
+
 export function ChevronDownIcon({ className = 'icon', ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -460,8 +479,8 @@ export function MenuLinesIcon({ className = 'icon', ...props }: SVGProps<SVGSVGE
       {...props}
     >
       <line x1="4" y1="7" x2="20" y2="7" />
-      <line x1="4" y1="12" x2="16" y2="12" />
-      <line x1="4" y1="17" x2="11" y2="17" />
+      <line x1="9" y1="12" x2="20" y2="12" />
+      <line x1="14" y1="17" x2="20" y2="17" />
     </svg>
   )
 }
