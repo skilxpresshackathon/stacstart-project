@@ -64,9 +64,20 @@ import {
   updateBookingStatus,
   cancelBooking,
 } from '../lib/data/bookings'
-import type { MarketplaceItem, User, BookingRequest, BookingStatus, SearchFilters, Provider } from '../types/marketplace'
+import type { MarketplaceItem, User, BookingRequest, BookingStatus, SearchFilters, Provider, VideoItem } from '../types/marketplace'
 
-import { type ViewType, getHashForView, getViewFromHash } from '../lib/routes'
+import { type ViewType, getHashForView, getViewFromHash, parseHashQuery } from '../lib/routes'
+
+export interface HistoryNavigationState {
+  view: ViewType
+  itemId?: string
+  profileId?: string
+  searchQuery?: string
+  isSearchActive?: boolean
+  returnView?: ViewType
+  bookingId?: string
+  requestId?: string
+}
 
 export function DiscoverPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
@@ -78,8 +89,18 @@ export function DiscoverPage() {
   })
   const [selectedProfileItem, setSelectedProfileItem] = useState<MarketplaceItem | null>(null)
   const [profileReturnView, setProfileReturnView] = useState<ViewType>('discover')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isSearchActive, setIsSearchActive] = useState(false)
+  const [searchQuery, setSearchQuery] = useState(() => {
+    if (typeof window !== 'undefined' && window.location.hash.startsWith('#search')) {
+      return parseHashQuery(window.location.hash).get('q') || ''
+    }
+    return ''
+  })
+  const [isSearchActive, setIsSearchActive] = useState(() => {
+    if (typeof window !== 'undefined' && window.location.hash.startsWith('#search')) {
+      return true
+    }
+    return false
+  })
   const [searchFilters, setSearchFilters] = useState<SearchFilters>(DEFAULT_SEARCH_FILTERS)
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -461,21 +482,31 @@ export function DiscoverPage() {
   }, [])
 
   // Unified Navigation & Native History Management
-  const navigateTo = (view: ViewType, options?: { replace?: boolean }) => {
+  const navigateTo = (
+    view: ViewType,
+    options?: {
+      replace?: boolean
+      hash?: string
+      state?: Partial<HistoryNavigationState>
+    }
+  ) => {
     setCurrentView(view)
-    const newHash = getHashForView(view)
-    if (newHash) {
-      if (options?.replace) {
-        window.history.replaceState(null, '', window.location.pathname + window.location.search + newHash)
-      } else {
-        window.history.pushState(null, '', window.location.pathname + window.location.search + newHash)
-      }
+    const targetHash = options?.hash ?? getHashForView(view)
+    const navState: HistoryNavigationState = {
+      view,
+      searchQuery: isSearchActive ? searchQuery : undefined,
+      isSearchActive,
+      ...options?.state,
+    }
+
+    const fullUrl = targetHash
+      ? window.location.pathname + window.location.search + targetHash
+      : window.location.pathname + window.location.search
+
+    if (options?.replace) {
+      window.history.replaceState(navState, '', fullUrl)
     } else {
-      if (options?.replace) {
-        window.history.replaceState(null, '', window.location.pathname + window.location.search)
-      } else {
-        window.history.pushState(null, '', window.location.pathname + window.location.search)
-      }
+      window.history.pushState(navState, '', fullUrl)
     }
   }
 
@@ -484,6 +515,43 @@ export function DiscoverPage() {
       window.history.back()
     } else {
       navigateTo(fallbackView)
+    }
+  }
+
+  const handleOpenSearch = () => {
+    setIsSearchActive(true)
+    setCurrentView('search')
+    navigateTo('search', {
+      hash: '#search',
+      state: { view: 'search', isSearchActive: true, searchQuery: '' },
+    })
+  }
+
+  const handleSearchQueryChange = (val: string) => {
+    const wasEmpty = searchQuery.trim() === ''
+    const isNowEmpty = val.trim() === ''
+    setSearchQuery(val)
+
+    if (isNowEmpty) {
+      setCurrentView('search')
+      window.history.replaceState(
+        { view: 'search', isSearchActive: true, searchQuery: '' },
+        '',
+        window.location.pathname + window.location.search + '#search'
+      )
+    } else {
+      setCurrentView('search-results')
+      const targetHash = `#search?q=${encodeURIComponent(val)}`
+      const navState: HistoryNavigationState = {
+        view: 'search-results',
+        isSearchActive: true,
+        searchQuery: val,
+      }
+      if (wasEmpty) {
+        window.history.pushState(navState, '', window.location.pathname + window.location.search + targetHash)
+      } else {
+        window.history.replaceState(navState, '', window.location.pathname + window.location.search + targetHash)
+      }
     }
   }
 
@@ -544,12 +612,20 @@ export function DiscoverPage() {
     }
     setSelectedDetailItem(item)
     setBookingTargetItem(item)
-    navigateTo('video-viewer')
+    const returnView = isSearchActive ? (searchQuery.trim() ? 'search-results' : 'search') : 'discover'
+    navigateTo('video-viewer', {
+      hash: `#video?id=${item.id}`,
+      state: {
+        view: 'video-viewer',
+        itemId: item.id,
+        returnView,
+      },
+    })
   }
 
   const handleBackFromVideoViewer = () => {
     setSelectedDetailItem(null)
-    navigateBack('discover')
+    navigateBack(isSearchActive ? 'search-results' : 'discover')
     if (!isSearchActive) {
       requestAnimationFrame(() => {
         window.scrollTo(0, lastDiscoverScrollY.current)
@@ -564,7 +640,15 @@ export function DiscoverPage() {
     if (!currentUser) {
       setAuthModal({ isOpen: true, mode: 'login' })
     } else {
-      navigateTo('request-service')
+      navigateTo('request-service', {
+        hash: `#request-service?providerId=${item.provider.id}`,
+        state: {
+          view: 'request-service',
+          profileId: item.provider.id,
+          itemId: item.id,
+          returnView: 'video-viewer',
+        },
+      })
     }
   }
 
@@ -588,7 +672,18 @@ export function DiscoverPage() {
     }
     setProfileReturnView(fromView)
     setSelectedProfileItem(item)
-    navigateTo('provider-profile')
+    const providerId = item.provider?.id || ''
+    navigateTo('provider-profile', {
+      hash: providerId ? `#profile?id=${providerId}` : '#profile',
+      state: {
+        view: 'provider-profile',
+        profileId: providerId,
+        itemId: item.id,
+        returnView: fromView,
+        searchQuery: isSearchActive ? searchQuery : undefined,
+        isSearchActive,
+      },
+    })
 
     // Fetch full provider details (services, videos, reviews) from Supabase
     if (item.provider?.id) {
@@ -597,6 +692,48 @@ export function DiscoverPage() {
         setSelectedProfileItem((prev) => (prev ? { ...prev, provider: fullProvider } : prev))
       }
     }
+  }
+
+  const handleVideoClickFromProvider = (video: VideoItem) => {
+    const item: MarketplaceItem = {
+      id: video.id || `vid-${video.storagePath || Math.random()}`,
+      provider: selectedProfileItem?.provider || {
+        id: video.providerId || '',
+        businessName: 'Provider',
+        initials: 'P',
+        category: 'Services',
+        location: 'Local',
+        isVerified: true,
+      },
+      service: selectedProfileItem?.service || {
+        id: 'srv-default',
+        providerId: video.providerId || '',
+        name: video.title || selectedProfileItem?.provider.businessName || 'Service',
+        priceDisplay: 'Contact for pricing',
+      },
+      video: {
+        id: video.id || 'vid-0',
+        providerId: video.providerId || '',
+        title: video.title,
+        videoUrl: video.videoUrl,
+        storagePath: video.storagePath,
+        thumbnailUrl: video.thumbnailUrl,
+        duration: video.duration || '0:30',
+      },
+      rating: selectedProfileItem?.rating || 5,
+    }
+
+    setSelectedDetailItem(item)
+    setBookingTargetItem(item)
+    navigateTo('video-viewer', {
+      hash: item.id ? `#video?id=${item.id}` : '#video',
+      state: {
+        view: 'video-viewer',
+        itemId: item.id,
+        profileId: selectedProfileItem?.provider.id,
+        returnView: 'provider-profile',
+      },
+    })
   }
 
   const handleProviderClickFromBookings = (provider: Provider) => {
@@ -670,142 +807,207 @@ export function DiscoverPage() {
     if (!currentUser) {
       setAuthModal({ isOpen: true, mode: 'login' })
     } else {
-      navigateTo('request-service')
+      const providerId = item.provider?.id || ''
+      navigateTo('request-service', {
+        hash: providerId ? `#request-service?providerId=${providerId}` : '#request-service',
+        state: {
+          view: 'request-service',
+          profileId: providerId,
+          itemId: item.id,
+          returnView: 'provider-profile',
+        },
+      })
     }
   }
 
-  // URL hash support and role-based route guards
+  // URL hash support and native browser Back/Forward sync
   useEffect(() => {
     if (isAuthLoading) return
 
-    const checkHash = () => {
-      const hash = window.location.hash
+    const handleRouteSync = (e?: PopStateEvent) => {
+      const rawHash = window.location.hash || ''
+      const view = getViewFromHash(rawHash)
+      const params = parseHashQuery(rawHash)
+      const popState = (e?.state as HistoryNavigationState) || null
 
       // Admin routes guard
       if (
-        hash === '#admin-dashboard' ||
-        hash === '#admin' ||
-        hash === '#video-moderation' ||
-        hash === '#moderation' ||
-        hash === '#review-video' ||
-        hash === '#reject-video' ||
-        hash === '#id-verification' ||
-        hash === '#verification'
+        view === 'admin-dashboard' ||
+        view === 'video-moderation' ||
+        view === 'review-video' ||
+        view === 'reject-video' ||
+        view === 'id-verification'
       ) {
         if (currentUser?.role !== 'admin') {
           showNotification('Access restricted to administrators.')
           setCurrentView('discover')
-          if (hash) history.pushState(null, '', window.location.pathname + window.location.search)
+          setIsSearchActive(false)
+          if (rawHash) window.history.replaceState(null, '', window.location.pathname + window.location.search)
           return
         }
-        if (hash === '#admin-dashboard' || hash === '#admin') setCurrentView('admin-dashboard')
-        else if (hash === '#video-moderation' || hash === '#moderation') setCurrentView('video-moderation')
-        else if (hash === '#review-video') setCurrentView('review-video')
-        else if (hash === '#reject-video') setCurrentView('reject-video')
-        else if (hash === '#id-verification' || hash === '#verification') setCurrentView('id-verification')
+        if (view === 'admin-dashboard') setCurrentView('admin-dashboard')
+        else if (view === 'video-moderation') setCurrentView('video-moderation')
+        else if (view === 'review-video') {
+          const vId = params.get('id') || popState?.itemId
+          if (vId && moderationVideos.length > 0) {
+            const found = moderationVideos.find((m) => m.id === vId)
+            if (found) {
+              setReviewVideoTarget({
+                id: found.id,
+                serviceName: found.title,
+                providerName: found.providerName,
+                videoUrl: found.videoUrl,
+                storagePath: found.storagePath,
+                thumbnailUrl: found.thumbnailUrl,
+              })
+            }
+          }
+          setCurrentView('review-video')
+        } else if (view === 'reject-video') setCurrentView('reject-video')
+        else if (view === 'id-verification') setCurrentView('id-verification')
         return
       }
 
       // Provider routes guard
       if (
-        hash === '#provider-hub' ||
-        hash === '#provider-hub-active' ||
-        hash === '#provider-hub-new' ||
-        hash === '#client-requests' ||
-        hash === '#provider-requests' ||
-        hash.startsWith('#request-details-') ||
-        hash === '#request-details' ||
-        hash === '#provider-videos' ||
-        hash === '#provider-upload-video' ||
-        hash === '#customer-reviews' ||
-        hash === '#reviews'
+        view === 'provider-hub' ||
+        view === 'provider-requests' ||
+        view === 'provider-request-details' ||
+        view === 'provider-videos' ||
+        view === 'provider-upload-video' ||
+        view === 'customer-reviews'
       ) {
         if (currentUser?.role !== 'provider' && currentUser?.role !== 'admin') {
           showNotification('Please sign in as a service provider to access Provider Hub.')
           setCurrentView('discover')
-          if (hash) history.pushState(null, '', window.location.pathname + window.location.search)
+          setIsSearchActive(false)
+          if (rawHash) window.history.replaceState(null, '', window.location.pathname + window.location.search)
           if (!currentUser) setAuthModal({ isOpen: true, mode: 'login' })
           return
         }
-        if (
-          hash === '#provider-hub' ||
-          hash === '#provider-hub-active' ||
-          hash === '#provider-hub-new'
-        ) {
+        if (view === 'provider-hub') {
           setCurrentView('provider-hub')
-        } else if (hash === '#client-requests' || hash === '#provider-requests') {
+        } else if (view === 'provider-requests') {
           setCurrentView('provider-requests')
-        } else if (hash === '#provider-videos') {
+        } else if (view === 'provider-videos') {
           setCurrentView('provider-videos')
-        } else if (hash === '#provider-upload-video') {
+        } else if (view === 'provider-upload-video') {
           setCurrentView('provider-upload-video')
-        } else if (hash === '#customer-reviews' || hash === '#reviews') {
+        } else if (view === 'customer-reviews') {
           setCurrentView('customer-reviews')
-        } else if (hash === '#request-details-pending') {
-          const req = providerRequestsRef.current.find((r) => r.status === 'pending') || providerRequestsRef.current[0] || null
+        } else if (view === 'provider-request-details') {
+          const reqId = params.get('id') || popState?.requestId
+          const req = reqId
+            ? providerRequestsRef.current.find((r) => r.id === reqId)
+            : providerRequestsRef.current[0] || null
           if (req) setActiveProviderRequest(req)
-          setCurrentView('provider-request-details')
-        } else if (hash === '#request-details-inprogress') {
-          const req = providerRequestsRef.current.find((r) => r.status === 'in_progress') || providerRequestsRef.current[0] || null
-          if (req) setActiveProviderRequest(req)
-          setCurrentView('provider-request-details')
-        } else if (hash === '#request-details-completed') {
-          const req = providerRequestsRef.current.find((r) => r.status === 'completed') || providerRequestsRef.current[0] || null
-          if (req) setActiveProviderRequest(req)
-          setCurrentView('provider-request-details')
-        } else if (hash === '#request-details-declined') {
-          const req = providerRequestsRef.current.find((r) => r.status === 'declined') || providerRequestsRef.current[0] || null
-          if (req) setActiveProviderRequest(req)
-          setCurrentView('provider-request-details')
-        } else if (hash === '#request-details') {
           setCurrentView('provider-request-details')
         }
         return
       }
 
+      // Search & Search Results routes
+      if (view === 'search' || view === 'search-results') {
+        const q = params.get('q') || popState?.searchQuery || ''
+        setIsSearchActive(true)
+        setSearchQuery(q)
+        setCurrentView(q.trim() ? 'search-results' : 'search')
+        return
+      }
+
       // Customer routes
-      if (hash === '#profile') {
-        if (marketplaceItems.length > 0) {
-          setSelectedProfileItem(marketplaceItems[0])
-          setProfileReturnView('discover')
-          setCurrentView('provider-profile')
-        }
-      } else if (hash === '#bookings') {
+      if (view === 'bookings') {
         if (!currentUser) {
           showNotification('Please sign in to view your bookings.')
           setAuthModal({ isOpen: true, mode: 'login' })
           setCurrentView('discover')
-          history.pushState(null, '', window.location.pathname + window.location.search)
+          setIsSearchActive(false)
+          window.history.replaceState(null, '', window.location.pathname + window.location.search)
           return
         }
+        setIsSearchActive(false)
         setCurrentView('bookings')
-      } else if (hash === '#chat-pending') {
-        setActiveChatBooking(createDemoBooking('pending'))
-        setCurrentView('chat')
-      } else if (hash === '#chat-inprogress') {
-        setActiveChatBooking(createDemoBooking('in_progress'))
-        setCurrentView('chat')
-      } else if (hash === '#chat-declined') {
-        setActiveChatBooking(createDemoBooking('declined'))
-        setCurrentView('chat')
-      } else if (hash === '#chat-completed') {
-        setActiveChatBooking(createDemoBooking('completed'))
-        setCurrentView('chat')
-      } else if (hash === '#provider-signup') {
-        setCurrentView('provider-signup')
-      } else if (!hash || hash === '#discover') {
-        setCurrentView('discover')
+        return
       }
+
+      if (view === 'provider-profile') {
+        const provId = params.get('id') || popState?.profileId
+        if (provId) {
+          const item = marketplaceItems.find((it) => it.provider.id === provId)
+          if (item) {
+            setSelectedProfileItem(item)
+          }
+        } else if (marketplaceItems.length > 0 && !selectedProfileItem) {
+          setSelectedProfileItem(marketplaceItems[0])
+        }
+        setCurrentView('provider-profile')
+        return
+      }
+
+      if (view === 'video-viewer') {
+        const vidId = params.get('id') || popState?.itemId
+        if (vidId) {
+          const item = marketplaceItems.find((it) => it.id === vidId || it.video?.id === vidId)
+          if (item) {
+            setSelectedDetailItem(item)
+            setBookingTargetItem(item)
+          }
+        }
+        setCurrentView('video-viewer')
+        return
+      }
+
+      if (view === 'request-service') {
+        const provId = params.get('providerId') || popState?.profileId
+        if (provId) {
+          const item = marketplaceItems.find((it) => it.provider.id === provId)
+          if (item) {
+            setBookingTargetItem(item)
+            setSelectedProfileItem(item)
+          }
+        }
+        setCurrentView('request-service')
+        return
+      }
+
+      if (view === 'chat') {
+        const bId = params.get('id') || popState?.bookingId
+        if (bId) {
+          const booking = bookings.find((b) => b.id === bId) || providerRequestsRef.current.find((r) => r.id === bId)
+          if (booking) setActiveChatBooking(booking)
+        } else if (rawHash === '#chat-pending') {
+          setActiveChatBooking(createDemoBooking('pending'))
+        } else if (rawHash === '#chat-inprogress') {
+          setActiveChatBooking(createDemoBooking('in_progress'))
+        } else if (rawHash === '#chat-declined') {
+          setActiveChatBooking(createDemoBooking('declined'))
+        } else if (rawHash === '#chat-completed') {
+          setActiveChatBooking(createDemoBooking('completed'))
+        }
+        setCurrentView('chat')
+        return
+      }
+
+      if (view === 'provider-signup') {
+        setIsSearchActive(false)
+        setCurrentView('provider-signup')
+        return
+      }
+
+      // Discover view (default)
+      setIsSearchActive(false)
+      setSearchQuery('')
+      setCurrentView('discover')
     }
 
-    checkHash()
-    window.addEventListener('hashchange', checkHash)
-    window.addEventListener('popstate', checkHash)
+    handleRouteSync()
+    window.addEventListener('hashchange', handleRouteSync as EventListener)
+    window.addEventListener('popstate', handleRouteSync as EventListener)
     return () => {
-      window.removeEventListener('hashchange', checkHash)
-      window.removeEventListener('popstate', checkHash)
+      window.removeEventListener('hashchange', handleRouteSync as EventListener)
+      window.removeEventListener('popstate', handleRouteSync as EventListener)
     }
-  }, [currentUser, isAuthLoading, marketplaceItems])
+  }, [currentUser, isAuthLoading, marketplaceItems, moderationVideos, bookings, selectedProfileItem])
 
   // Admin Review Video Action Handlers
   const handleBackFromReviewVideo = () => {
@@ -866,13 +1068,26 @@ export function DiscoverPage() {
       storagePath: video.storagePath,
     })
     setReviewVideoReturnView('video-moderation')
-    navigateTo('review-video')
+    navigateTo('review-video', {
+      hash: `#review-video?id=${video.id}`,
+      state: {
+        view: 'review-video',
+        itemId: video.id,
+        returnView: 'video-moderation',
+      },
+    })
   }
 
   // Admin Dashboard Action Handlers
   const handleNavigateReviewVideosFromDashboard = () => {
     setVideoModerationReturnView('admin-dashboard')
-    navigateTo('video-moderation')
+    navigateTo('video-moderation', {
+      hash: '#video-moderation',
+      state: {
+        view: 'video-moderation',
+        returnView: 'admin-dashboard',
+      },
+    })
   }
 
   const handleReviewIdFromDashboard = () => {
@@ -891,7 +1106,14 @@ export function DiscoverPage() {
 
   const handleOpenChat = (booking: BookingRequest) => {
     setActiveChatBooking(booking)
-    navigateTo('chat')
+    navigateTo('chat', {
+      hash: `#chat?id=${booking.id}`,
+      state: {
+        view: 'chat',
+        bookingId: booking.id,
+        returnView: 'bookings',
+      },
+    })
   }
 
   const handleBackFromChat = () => {
@@ -1008,8 +1230,8 @@ export function DiscoverPage() {
   const handleNavigateSearch = () => {
     setSelectedDetailItem(null)
     setBookingTargetItem(null)
-    setIsSearchActive(true)
-    navigateTo('discover')
+    setIsDrawerOpen(false)
+    handleOpenSearch()
     setTimeout(() => {
       const searchEl = document.getElementById('search-activity-input')
       if (searchEl) {
@@ -1117,7 +1339,14 @@ export function DiscoverPage() {
 
   const handleOpenProviderRequestDetails = (request: BookingRequest) => {
     setActiveProviderRequest(request)
-    setCurrentView('provider-request-details')
+    navigateTo('provider-request-details', {
+      hash: `#request-details?id=${request.id}`,
+      state: {
+        view: 'provider-request-details',
+        requestId: request.id,
+        returnView: 'provider-requests',
+      },
+    })
   }
 
   return (
@@ -1143,6 +1372,7 @@ export function DiscoverPage() {
             item={selectedProfileItem}
             onBack={handleBackFromProviderProfile}
             onRequestService={handleRequestServiceFromProviderProfile}
+            onVideoClick={handleVideoClickFromProvider}
           />
         ) : currentView === 'video-viewer' && selectedDetailItem ? (
           <VideoViewer
@@ -1369,7 +1599,7 @@ export function DiscoverPage() {
             <div className="search-activity-view">
               <SearchHeader
                 query={searchQuery}
-                onQueryChange={setSearchQuery}
+                onQueryChange={handleSearchQueryChange}
                 onBack={handleExitSearch}
                 filters={searchFilters}
                 activeFilterCount={activeFilterCount}
@@ -1431,13 +1661,11 @@ export function DiscoverPage() {
                 <SearchBar
                   value={searchQuery}
                   onChange={(val) => {
-                    setSearchQuery(val)
-                    if (val.trim().length > 0) {
-                      setIsSearchActive(true)
-                    }
+                    handleOpenSearch()
+                    handleSearchQueryChange(val)
                   }}
-                  onFocus={() => setIsSearchActive(true)}
-                  onClick={() => setIsSearchActive(true)}
+                  onFocus={handleOpenSearch}
+                  onClick={handleOpenSearch}
                 />
               </div>
               <main className="marketplace-content">

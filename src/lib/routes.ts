@@ -1,5 +1,7 @@
 export type ViewType =
   | 'discover'
+  | 'search'
+  | 'search-results'
   | 'bookings'
   | 'video-viewer'
   | 'request-service'
@@ -20,6 +22,9 @@ export type ViewType =
 
 export function getHashForView(view: ViewType): string {
   switch (view) {
+    case 'search':
+    case 'search-results':
+      return '#search'
     case 'admin-dashboard':
       return '#admin-dashboard'
     case 'video-moderation':
@@ -61,7 +66,7 @@ export function getHashForView(view: ViewType): string {
 }
 
 export function getViewFromHash(hash: string): ViewType {
-  const cleanHash = hash.replace(/^#/, '')
+  const cleanHash = hash.replace(/^#/, '').split('?')[0]
   switch (cleanHash) {
     case 'admin-dashboard':
     case 'admin':
@@ -112,9 +117,20 @@ export function getViewFromHash(hash: string): ViewType {
       return 'provider-signup'
     case 'video':
       return 'video-viewer'
+    case 'search':
+      return 'search'
+    case 'search-results':
+      return 'search-results'
     case 'discover':
     case '':
     default:
       return 'discover'
   }
 }
+
+export function parseHashQuery(hash: string): URLSearchParams {
+  const qIndex = hash.indexOf('?')
+  if (qIndex === -1) return new URLSearchParams()
+  return new URLSearchParams(hash.slice(qIndex + 1))
+}
+

@@ -13,12 +13,14 @@ interface ProviderProfileProps {
   item: MarketplaceItem | null
   onBack: () => void
   onRequestService: (item: MarketplaceItem) => void
+  onVideoClick?: (video: VideoItem) => void
 }
 
 export function ProviderProfile({
   item,
   onBack,
   onRequestService,
+  onVideoClick,
 }: ProviderProfileProps) {
   const [activeTab, setActiveTab] = useState<'videos' | 'about'>('videos')
 
@@ -183,7 +185,20 @@ export function ProviderProfile({
                 className="profile-videos-grid"
               >
                 {featuredVideos.map((vid) => (
-                  <article key={vid.id} className="profile-video-card">
+                  <article
+                    key={vid.id}
+                    className="profile-video-card"
+                    role="button"
+                    tabIndex={0}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => onVideoClick?.(vid)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onVideoClick?.(vid)
+                      }
+                    }}
+                  >
                     {/* Media Preview Box */}
                     <div className="profile-video-media">
                       <VideoPosterThumbnail
