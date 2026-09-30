@@ -10,6 +10,7 @@ import {
   UserIcon,
 } from '../common/Icons'
 import { supabase } from '../../lib/supabase'
+import { uploadVerificationDocument, deleteVerificationDocument } from '../../lib/data/verification'
 import type { User } from '../../types/marketplace'
 
 interface ProviderSignupFlowProps {
@@ -204,18 +205,52 @@ export function ProviderSignupFlow({
         return
       }
 
-      // 2. Persist provider business profile and verification submission via secure RPC
+      // 2. Upload actual NIN and selfie files to private verification-documents storage
+      const submissionId = crypto.randomUUID()
+
+      const ninRes = await uploadVerificationDocument(
+        currentAuthUser.id,
+        submissionId,
+        ninFile,
+        'nin'
+      )
+
+      if (!ninRes.success || !ninRes.storagePath) {
+        setIsLoading(false)
+        setErrorMessage(ninRes.error || 'Failed to upload NIN document to secure storage.')
+        return
+      }
+
+      const selfieRes = await uploadVerificationDocument(
+        currentAuthUser.id,
+        submissionId,
+        selfieFile,
+        'selfie'
+      )
+
+      if (!selfieRes.success || !selfieRes.storagePath) {
+        // Clean up already uploaded NIN document to prevent orphan files
+        await deleteVerificationDocument(ninRes.storagePath)
+        setIsLoading(false)
+        setErrorMessage(selfieRes.error || 'Failed to upload selfie to secure storage.')
+        return
+      }
+
+      // 3. Persist provider business profile and verification submission via secure RPC
       const { error: rpcError } = await supabase.rpc('register_as_provider', {
         p_business_name: businessName.trim(),
         p_category: category.trim(),
         p_services: services.trim(),
         p_location: location.trim(),
         p_nin: cleanNin,
-        p_id_document_path: `local_pending_storage/${ninFile.name}`,
-        p_selfie_path: `local_pending_storage/${selfieFile.name}`,
+        p_id_document_path: ninRes.storagePath,
+        p_selfie_path: selfieRes.storagePath,
       })
 
       if (rpcError) {
+        // Clean up both uploaded files on RPC failure
+        await deleteVerificationDocument(ninRes.storagePath)
+        await deleteVerificationDocument(selfieRes.storagePath)
         setIsLoading(false)
         setErrorMessage(rpcError.message)
         return

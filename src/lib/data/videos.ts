@@ -146,7 +146,7 @@ export async function fetchDiscoverMarketplaceItems(): Promise<MarketplaceItem[]
         try {
           const { data: signed } = await supabase.storage
             .from('provider-videos')
-            .createSignedUrl(row.storage_path, 3600)
+            .createSignedUrl(row.storage_path, 86400)
           if (signed?.signedUrl) {
             resolvedVideoUrl = signed.signedUrl
           }
@@ -187,6 +187,7 @@ export async function fetchDiscoverMarketplaceItems(): Promise<MarketplaceItem[]
         providerId: prov.id,
         duration: row.duration || '0:30',
         videoUrl: resolvedVideoUrl,
+        storagePath: row.storage_path || undefined,
         thumbnailUrl: row.thumbnail_url || undefined,
         title: row.title,
       }
@@ -260,6 +261,8 @@ export async function fetchProviderVideos(userOrProviderId: string): Promise<Pro
           title: v.title,
           status: v.status as ProviderVideoStatus,
           thumbnailUrl: v.thumbnail_url || undefined,
+          videoUrl: resolvedVideoUrl,
+          storagePath: v.storage_path || undefined,
         }
       })
     )
@@ -314,7 +317,7 @@ export async function fetchAdminModerationVideos(): Promise<ModerationVideoItem[
           try {
             const { data: signed } = await supabase.storage
               .from('provider-videos')
-              .createSignedUrl(v.storage_path, 3600)
+              .createSignedUrl(v.storage_path, 86400)
             if (signed?.signedUrl) {
               resolvedVideoUrl = signed.signedUrl
             }
@@ -329,6 +332,7 @@ export async function fetchAdminModerationVideos(): Promise<ModerationVideoItem[
           providerName: provRel?.business_name || 'Service Provider',
           status,
           videoUrl: resolvedVideoUrl,
+          storagePath: v.storage_path || undefined,
           thumbnailUrl: v.thumbnail_url || undefined,
         }
       })
@@ -338,6 +342,28 @@ export async function fetchAdminModerationVideos(): Promise<ModerationVideoItem[
   } catch (err) {
     console.warn('[Data/Videos] Unexpected error in fetchAdminModerationVideos:', err)
     return []
+  }
+}
+
+/**
+ * Resolves a fresh signed URL for video streaming / HTML5 playback.
+ * Valid for 24 hours (86,400s) to prevent playback interruption.
+ */
+export async function getVideoPlaybackUrl(storagePath?: string | null): Promise<string | null> {
+  if (!storagePath) return null
+  try {
+    const { data, error } = await supabase.storage
+      .from('provider-videos')
+      .createSignedUrl(storagePath, 86400)
+
+    if (error || !data?.signedUrl) {
+      console.warn('[Data/Videos] createSignedUrl error:', error?.message)
+      return null
+    }
+    return data.signedUrl
+  } catch (err) {
+    console.warn('[Data/Videos] Error resolving playback URL:', err)
+    return null
   }
 }
 

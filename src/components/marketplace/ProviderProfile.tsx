@@ -7,6 +7,7 @@ import {
   StarIcon,
   PlayIcon,
 } from '../common/Icons'
+import { VideoPosterThumbnail } from '../common/VideoPosterThumbnail'
 
 interface ProviderProfileProps {
   item: MarketplaceItem | null
@@ -185,6 +186,13 @@ export function ProviderProfile({
                   <article key={vid.id} className="profile-video-card">
                     {/* Media Preview Box */}
                     <div className="profile-video-media">
+                      <VideoPosterThumbnail
+                        thumbnailUrl={vid.thumbnailUrl}
+                        videoUrl={vid.videoUrl}
+                        alt={vid.title || service.name}
+                        className="profile-video-poster"
+                        fallbackText={vid.title || service.name}
+                      />
                       <div className="profile-video-play-overlay" aria-hidden="true">
                         <PlayIcon />
                       </div>

@@ -72,19 +72,37 @@ export async function fetchProviderDetails(providerId: string): Promise<Provider
     // 3. Fetch approved videos
     const { data: videoRows } = await supabase
       .from('videos')
-      .select('id, provider_id, title, duration, video_url, thumbnail_url')
+      .select('id, provider_id, title, duration, video_url, thumbnail_url, storage_path')
       .eq('provider_id', providerId)
       .eq('status', 'approved')
       .order('created_at', { ascending: false })
 
-    const featuredVideos: VideoItem[] = (videoRows || []).map((v) => ({
-      id: v.id,
-      providerId: v.provider_id,
-      duration: v.duration || '0:30',
-      videoUrl: v.video_url || undefined,
-      thumbnailUrl: v.thumbnail_url || undefined,
-      title: v.title,
-    }))
+    const featuredVideos: VideoItem[] = await Promise.all(
+      (videoRows || []).map(async (v) => {
+        let resolvedVideoUrl = v.video_url || undefined
+        if (!resolvedVideoUrl && v.storage_path) {
+          try {
+            const { data: signed } = await supabase.storage
+              .from('provider-videos')
+              .createSignedUrl(v.storage_path, 86400)
+            if (signed?.signedUrl) {
+              resolvedVideoUrl = signed.signedUrl
+            }
+          } catch {
+            // ignore signed URL error
+          }
+        }
+        return {
+          id: v.id,
+          providerId: v.provider_id,
+          duration: v.duration || '0:30',
+          videoUrl: resolvedVideoUrl,
+          thumbnailUrl: v.thumbnail_url || undefined,
+          storagePath: v.storage_path || undefined,
+          title: v.title,
+        }
+      })
+    )
 
     // 4. Fetch real reviews with reviewer display identity (privacy-safe RPC)
     let reviews: Review[] = []

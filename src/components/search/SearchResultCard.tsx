@@ -1,5 +1,6 @@
 import type { MarketplaceItem } from '../../types/marketplace'
 import { VerifiedBadgeIcon, PlayIcon, StarIcon, LocationPinIcon } from '../common/Icons'
+import { VideoPosterThumbnail } from '../common/VideoPosterThumbnail'
 
 interface SearchResultCardProps {
   item: MarketplaceItem
@@ -28,12 +29,17 @@ export function SearchResultCard({ item, onClick, onProviderClick }: SearchResul
       aria-label={`${item.service.name} by ${item.provider.businessName}`}
     >
       <div className="search-result-media">
-        <div className="search-result-placeholder">
-          <div className="search-result-play-overlay">
-            <PlayIcon className="search-result-play-icon" />
-          </div>
-          <span className="search-result-duration">{item.video.duration}</span>
+        <VideoPosterThumbnail
+          thumbnailUrl={item.video.thumbnailUrl}
+          videoUrl={item.video.videoUrl}
+          alt={item.service.name}
+          className="search-result-poster"
+          fallbackText={item.service.name}
+        />
+        <div className="search-result-play-overlay">
+          <PlayIcon className="search-result-play-icon" />
         </div>
+        <span className="search-result-duration">{item.video.duration}</span>
       </div>
 
       <div className="search-result-content">

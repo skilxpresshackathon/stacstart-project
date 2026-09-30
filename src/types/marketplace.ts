@@ -40,6 +40,7 @@ export interface VideoItem {
   providerId: string
   duration: string
   videoUrl?: string
+  storagePath?: string
   thumbnailUrl?: string
   title?: string
 }

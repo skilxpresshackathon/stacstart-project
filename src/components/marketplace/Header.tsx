@@ -1,4 +1,4 @@
-import { DiscoverLogo, UserIcon, MoreMenuIcon } from '../common/Icons'
+import { DiscoverLogo, UserIcon, MenuLinesIcon } from '../common/Icons'
 import type { User } from '../../types/marketplace'
 
 interface HeaderProps {
@@ -15,16 +15,16 @@ export function Header({ user, onAuthClick, onMenuClick }: HeaderProps) {
         <span className="brand-name">Discover</span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         {!user && (
           <button
             type="button"
             className="auth-action-btn"
             onClick={onAuthClick}
-            aria-label="Sign up or Sign in"
+            aria-label="Sign in"
           >
             <UserIcon />
-            <span>Sign up/Sign in</span>
+            <span>Sign In</span>
           </button>
         )}
         <button
@@ -33,7 +33,7 @@ export function Header({ user, onAuthClick, onMenuClick }: HeaderProps) {
           onClick={onMenuClick}
           aria-label="Open navigation menu"
         >
-          <MoreMenuIcon />
+          <MenuLinesIcon />
         </button>
       </div>
     </header>

@@ -1,14 +1,10 @@
 import { useState } from 'react'
 import { CheckIcon, MenuLinesIcon, ChevronRightIcon } from '../common/Icons'
-import {
-  DEFAULT_ADMIN_METRICS,
-  DEFAULT_SITE_VISITS,
-  type AdminPlatformMetrics,
-  type SiteVisitDataPoint
-} from '../../lib/mockData'
+import type { SiteVisitDataPoint } from '../../lib/mockData'
+import type { RealAdminMetrics } from '../../lib/data/admin'
 
 interface AdminDashboardProps {
-  metrics?: AdminPlatformMetrics
+  metrics?: RealAdminMetrics | { totalUsers: number; verifiedUsers: number; pendingVideosCount?: number; pendingVerificationsCount?: number }
   siteVisits?: SiteVisitDataPoint[]
   onMenuClick: () => void
   onReviewVideos: () => void
@@ -16,13 +12,14 @@ interface AdminDashboardProps {
 }
 
 export function AdminDashboard({
-  metrics = DEFAULT_ADMIN_METRICS,
-  siteVisits = DEFAULT_SITE_VISITS,
+  metrics = { totalUsers: 0, verifiedUsers: 0, pendingVideosCount: 0, pendingVerificationsCount: 0 },
+  siteVisits = [],
   onMenuClick,
   onReviewVideos,
   onReviewId,
 }: AdminDashboardProps) {
-  // Default selected day is Thursday (index 3) matching the designer reference
+  const isVisitsEmpty = !siteVisits || siteVisits.length === 0 || siteVisits.every(s => s.visits === 0)
+  // Default selected day is Thursday (index 3)
   const defaultSelectedIdx = siteVisits.findIndex(s => s.selected) >= 0
     ? siteVisits.findIndex(s => s.selected)
     : 3
@@ -119,6 +116,11 @@ export function AdminDashboard({
                   <ChevronRightIcon className="admin-site-visits-chevron" />
                 </div>
               </div>
+              {isVisitsEmpty && (
+                <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.8125rem', color: '#64748b' }}>
+                  0 site visits recorded. Visit analytics will accumulate as visitors browse Discover.
+                </p>
+              )}
 
               {/* Minimal Line Chart */}
               <div className="admin-site-visits-chart-wrap">
@@ -230,7 +232,22 @@ export function AdminDashboard({
               VIDEO MODERATION
             </h2>
             <div className="admin-action-card">
-              <h3 className="admin-card-title admin-video-mod-title">Videos awaiting review</h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <h3 className="admin-card-title admin-video-mod-title" style={{ margin: 0 }}>Videos awaiting review</h3>
+                {typeof metrics.pendingVideosCount === 'number' && (
+                  <span style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    background: metrics.pendingVideosCount > 0 ? '#eff6ff' : '#f1f5f9',
+                    color: metrics.pendingVideosCount > 0 ? '#1d4ed8' : '#64748b',
+                    padding: '2px 8px',
+                    borderRadius: '9999px',
+                    border: '1px solid currentColor'
+                  }}>
+                    {metrics.pendingVideosCount} awaiting
+                  </span>
+                )}
+              </div>
               <p className="admin-card-desc">
                 Providers have submitted videos that need your review before they can appear in Discover.
               </p>
@@ -250,7 +267,22 @@ export function AdminDashboard({
               ID VERIFICATION
             </h2>
             <div className="admin-action-card">
-              <h3 className="admin-card-title admin-id-verif-title">Pending ID review</h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <h3 className="admin-card-title admin-id-verif-title" style={{ margin: 0 }}>Pending ID review</h3>
+                {typeof metrics.pendingVerificationsCount === 'number' && (
+                  <span style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    background: metrics.pendingVerificationsCount > 0 ? '#eff6ff' : '#f1f5f9',
+                    color: metrics.pendingVerificationsCount > 0 ? '#1d4ed8' : '#64748b',
+                    padding: '2px 8px',
+                    borderRadius: '9999px',
+                    border: '1px solid currentColor'
+                  }}>
+                    {metrics.pendingVerificationsCount} pending
+                  </span>
+                )}
+              </div>
               <p className="admin-card-desc">
                 Providers have submitted IDs that need your review to be approved.
               </p>

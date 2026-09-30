@@ -13,6 +13,7 @@ import {
   type ProviderVideoItem,
   type ProviderVideoStatus,
 } from '../../lib/mockData'
+import { VideoPosterThumbnail } from '../common/VideoPosterThumbnail'
 
 export type VideoFilterTab = 'All' | 'Approved' | 'Under Review' | 'Rejected'
 
@@ -172,6 +173,14 @@ export function ProviderVideos({
             <div className="manage-videos-grid" role="list">
               {filteredVideos.map((video) => (
                 <div key={video.id} className="manage-video-card" role="listitem">
+                  <VideoPosterThumbnail
+                    thumbnailUrl={video.thumbnailUrl}
+                    videoUrl={video.videoUrl}
+                    alt={video.title}
+                    className="manage-video-poster"
+                    fallbackText={video.title}
+                  />
+
                   {/* Status Badge at Top Left */}
                   <div className="manage-video-card-top">
                     {renderStatusBadge(video.status)}

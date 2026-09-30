@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import type { MarketplaceItem } from '../../types/marketplace'
 import {
   ChevronLeftIcon,
@@ -7,6 +7,7 @@ import {
   PlayIcon,
   StarIcon,
 } from '../common/Icons'
+import { getVideoPlaybackUrl } from '../../lib/data/videos'
 
 interface VideoViewerProps {
   item: MarketplaceItem | null
@@ -21,6 +22,9 @@ export function VideoViewer({
   onRequestService,
   onProviderClick,
 }: VideoViewerProps) {
+  const [activeUrl, setActiveUrl] = useState<string | null>(item?.video?.videoUrl || null)
+  const [loadError, setLoadError] = useState(false)
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -31,12 +35,51 @@ export function VideoViewer({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onBack])
 
+  useEffect(() => {
+    let isMounted = true
+
+    if (!item?.video?.videoUrl && item?.video?.storagePath) {
+      getVideoPlaybackUrl(item.video.storagePath).then((url) => {
+        if (!isMounted) return
+        if (url) {
+          setActiveUrl(url)
+          setLoadError(false)
+        } else {
+          setLoadError(true)
+        }
+      }).catch(() => {
+        if (isMounted) {
+          setLoadError(true)
+        }
+      })
+    }
+
+    return () => {
+      isMounted = false
+    }
+  }, [item?.video?.videoUrl, item?.video?.storagePath])
+
   if (!item) return null
 
   const { provider, service, rating } = item
   const description =
     service.description ||
     `High quality professional service delivered by ${provider.businessName}. Book now to send a direct request.`
+
+  const handleVideoError = () => {
+    if (item.video?.storagePath && !loadError) {
+      // Attempt refreshing signed URL once
+      getVideoPlaybackUrl(item.video.storagePath).then((freshUrl) => {
+        if (freshUrl && freshUrl !== activeUrl) {
+          setActiveUrl(freshUrl)
+        } else {
+          setLoadError(true)
+        }
+      })
+    } else {
+      setLoadError(true)
+    }
+  }
 
   return (
     <div
@@ -58,23 +101,32 @@ export function VideoViewer({
 
         {/* Center Media Play Area */}
         <div className="video-viewer-media-stage">
-          {item.video?.videoUrl ? (
+          {activeUrl && !loadError ? (
             <video
-              src={item.video.videoUrl}
+              src={activeUrl.includes('#') ? activeUrl : `${activeUrl}#t=0.001`}
               className="video-viewer-player"
               controls
               playsInline
-              poster={item.video.thumbnailUrl}
+              preload="metadata"
+              poster={item.video?.thumbnailUrl}
+              onError={handleVideoError}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
-            <button
-              type="button"
-              className="video-viewer-play-btn"
-              aria-label={`Play video for ${service.name}`}
-            >
-              <PlayIcon />
-            </button>
+            <div className="video-viewer-fallback">
+              <button
+                type="button"
+                className="video-viewer-play-btn"
+                aria-label={`Play video for ${service.name}`}
+              >
+                <PlayIcon />
+              </button>
+              {loadError && (
+                <p className="video-viewer-fallback-text">
+                  Video preview temporarily unavailable.
+                </p>
+              )}
+            </div>
           )}
         </div>
 

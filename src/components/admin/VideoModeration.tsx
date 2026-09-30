@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ChevronLeftIcon, MenuLinesIcon, PlayIcon } from '../common/Icons'
+import { VideoPosterThumbnail } from '../common/VideoPosterThumbnail'
 import {
   type ModerationVideoItem,
   INITIAL_MODERATION_VIDEOS,
@@ -89,6 +90,13 @@ export function VideoModeration({
                 <div key={item.id} className="video-moderation-card" role="listitem">
                   {/* Left thumbnail placeholder */}
                   <div className="video-moderation-thumb" aria-hidden="true">
+                    <VideoPosterThumbnail
+                      thumbnailUrl={item.thumbnailUrl}
+                      videoUrl={item.videoUrl}
+                      alt={item.title}
+                      className="video-moderation-poster"
+                      fallbackText={item.title}
+                    />
                     <div className="video-moderation-play-circle">
                       <PlayIcon className="video-moderation-play-icon" />
                     </div>

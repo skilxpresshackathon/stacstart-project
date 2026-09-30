@@ -448,6 +448,8 @@ export interface ProviderVideoItem {
   title: string
   status: ProviderVideoStatus
   thumbnailUrl?: string
+  videoUrl?: string
+  storagePath?: string
 }
 
 export const INITIAL_PROVIDER_VIDEOS: ProviderVideoItem[] = [
@@ -478,6 +480,7 @@ export interface ReviewVideoItem {
   providerName: string
   serviceName: string
   videoUrl?: string
+  storagePath?: string
   thumbnailUrl?: string
 }
 
@@ -502,6 +505,7 @@ export interface ModerationVideoItem {
   providerName: string
   status: ModerationVideoStatus
   videoUrl?: string
+  storagePath?: string
   thumbnailUrl?: string
 }
 

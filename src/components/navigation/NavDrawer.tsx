@@ -7,17 +7,24 @@ import {
   SignOutIcon,
   DashboardGridIcon,
   VideoCameraIcon,
+  ShieldCheckIcon,
+  UserIcon,
 } from '../common/Icons'
+import type { User } from '../../types/marketplace'
 
 interface NavDrawerProps {
   isOpen: boolean
   onClose: () => void
+  user?: User | null
+  onSignIn?: () => void
   onNavigateHome: () => void
   onNavigateSearch: () => void
   onNavigateBookings: () => void
   onNavigateProviderHub?: () => void
   onNavigateVideoModeration?: () => void
   onNavigateAdminDashboard?: () => void
+  onNavigateIdVerification?: () => void
+  onNavigateProviderSignup?: () => void
   onSignOut: () => void
   isProvider?: boolean
   isAdmin?: boolean
@@ -27,12 +34,16 @@ interface NavDrawerProps {
 export function NavDrawer({
   isOpen,
   onClose,
+  user,
+  onSignIn,
   onNavigateHome,
   onNavigateSearch,
   onNavigateBookings,
   onNavigateProviderHub,
   onNavigateVideoModeration,
   onNavigateAdminDashboard,
+  onNavigateIdVerification,
+  onNavigateProviderSignup,
   onSignOut,
   isProvider = false,
   isAdmin = false,
@@ -50,6 +61,8 @@ export function NavDrawer({
 
   if (!isOpen) return null
 
+  const isAuthenticated = Boolean(user)
+
   return (
     <div className="nav-drawer-backdrop" onClick={onClose} aria-hidden={!isOpen}>
       <aside
@@ -60,6 +73,18 @@ export function NavDrawer({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="nav-drawer-header">
+          <div className="nav-drawer-user-info">
+            {isAuthenticated ? (
+              <div className="nav-drawer-user-badge">
+                <span className="nav-drawer-user-name">{user?.name}</span>
+                <span className="nav-drawer-user-role">
+                  {isAdmin ? 'Administrator' : isProvider ? 'Service Provider' : 'Customer'}
+                </span>
+              </div>
+            ) : (
+              <span className="nav-drawer-guest-label">Menu</span>
+            )}
+          </div>
           <button
             type="button"
             className="drawer-close-btn"
@@ -73,7 +98,7 @@ export function NavDrawer({
         <nav className="nav-drawer-menu">
           <button
             type="button"
-            className="nav-drawer-item"
+            className={`nav-drawer-item ${currentView === 'discover' ? 'nav-drawer-item-active' : ''}`}
             onClick={() => {
               onNavigateHome()
               onClose()
@@ -95,19 +120,22 @@ export function NavDrawer({
             <span>Search</span>
           </button>
 
-          <button
-            type="button"
-            className="nav-drawer-item"
-            onClick={() => {
-              onNavigateBookings()
-              onClose()
-            }}
-          >
-            <CalendarIcon className="nav-drawer-icon" />
-            <span>My Bookings</span>
-          </button>
+          {/* Protected Navigation — only shown when authenticated */}
+          {isAuthenticated && (
+            <button
+              type="button"
+              className={`nav-drawer-item ${currentView === 'bookings' ? 'nav-drawer-item-active' : ''}`}
+              onClick={() => {
+                onNavigateBookings()
+                onClose()
+              }}
+            >
+              <CalendarIcon className="nav-drawer-icon" />
+              <span>My Bookings</span>
+            </button>
+          )}
 
-          {isProvider && onNavigateProviderHub && (
+          {isAuthenticated && isProvider && onNavigateProviderHub && (
             <button
               type="button"
               className={`nav-drawer-item ${
@@ -123,23 +151,7 @@ export function NavDrawer({
             </button>
           )}
 
-          {isAdmin && onNavigateVideoModeration && (
-            <button
-              type="button"
-              className={`nav-drawer-item ${
-                currentView === 'video-moderation' ? 'nav-drawer-item-active' : ''
-              }`}
-              onClick={() => {
-                onNavigateVideoModeration()
-                onClose()
-              }}
-            >
-              <VideoCameraIcon className="nav-drawer-icon" />
-              <span>Video Moderation</span>
-            </button>
-          )}
-
-          {isAdmin && onNavigateAdminDashboard && (
+          {isAuthenticated && isAdmin && onNavigateAdminDashboard && (
             <button
               type="button"
               className={`nav-drawer-item ${
@@ -155,19 +167,83 @@ export function NavDrawer({
             </button>
           )}
 
+          {isAuthenticated && isAdmin && onNavigateVideoModeration && (
+            <button
+              type="button"
+              className={`nav-drawer-item ${
+                currentView === 'video-moderation' ? 'nav-drawer-item-active' : ''
+              }`}
+              onClick={() => {
+                onNavigateVideoModeration()
+                onClose()
+              }}
+            >
+              <VideoCameraIcon className="nav-drawer-icon" />
+              <span>Video Moderation</span>
+            </button>
+          )}
+
+          {isAuthenticated && isAdmin && onNavigateIdVerification && (
+            <button
+              type="button"
+              className={`nav-drawer-item ${
+                currentView === 'id-verification' ? 'nav-drawer-item-active' : ''
+              }`}
+              onClick={() => {
+                onNavigateIdVerification()
+                onClose()
+              }}
+            >
+              <ShieldCheckIcon className="nav-drawer-icon" />
+              <span>ID Verification</span>
+            </button>
+          )}
+
           <div className="nav-drawer-divider" />
 
-          <button
-            type="button"
-            className="nav-drawer-item nav-drawer-signout"
-            onClick={() => {
-              onSignOut()
-              onClose()
-            }}
-          >
-            <SignOutIcon className="nav-drawer-icon" />
-            <span>Sign Out</span>
-          </button>
+          {/* Unauthenticated: Show Become a Provider and Sign In */}
+          {!isAuthenticated && onNavigateProviderSignup && (
+            <button
+              type="button"
+              className="nav-drawer-item"
+              onClick={() => {
+                onNavigateProviderSignup()
+                onClose()
+              }}
+            >
+              <DashboardGridIcon className="nav-drawer-icon" />
+              <span>Become a Provider</span>
+            </button>
+          )}
+
+          {!isAuthenticated && onSignIn && (
+            <button
+              type="button"
+              className="nav-drawer-item nav-drawer-signin"
+              onClick={() => {
+                onSignIn()
+                onClose()
+              }}
+            >
+              <UserIcon className="nav-drawer-icon" />
+              <span>Sign In</span>
+            </button>
+          )}
+
+          {/* Authenticated: Show Sign Out action */}
+          {isAuthenticated && (
+            <button
+              type="button"
+              className="nav-drawer-item nav-drawer-signout"
+              onClick={() => {
+                onSignOut()
+                onClose()
+              }}
+            >
+              <SignOutIcon className="nav-drawer-icon" />
+              <span>Sign Out</span>
+            </button>
+          )}
         </nav>
       </aside>
     </div>

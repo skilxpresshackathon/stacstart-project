@@ -5,6 +5,7 @@ import {
   PlayIcon,
   StarIcon,
 } from '../common/Icons'
+import { VideoPosterThumbnail } from '../common/VideoPosterThumbnail'
 
 interface ProviderCardProps {
   item: MarketplaceItem
@@ -56,6 +57,14 @@ export function ProviderCard({ item, onCardClick, onProviderClick }: ProviderCar
 
       {/* Video Preview Area */}
       <div className="video-preview-container" tabIndex={0} role="region" aria-label={`Video preview for ${service.name}`}>
+        <VideoPosterThumbnail
+          thumbnailUrl={video.thumbnailUrl}
+          videoUrl={video.videoUrl}
+          alt={`Preview for ${service.name}`}
+          className="video-preview-media"
+          fallbackText={service.name}
+        />
+
         {/* Duration badge */}
         <div className="video-duration-badge" aria-label={`Duration: ${video.duration}`}>
           {video.duration}

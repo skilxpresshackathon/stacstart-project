@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Header } from '../components/marketplace/Header'
 import { SearchBar } from '../components/marketplace/SearchBar'
 import { ProviderCardList } from '../components/marketplace/ProviderCardList'
@@ -19,6 +19,9 @@ import { ReviewVideo } from '../components/admin/ReviewVideo'
 import { RejectVideo } from '../components/admin/RejectVideo'
 import { VideoModeration } from '../components/admin/VideoModeration'
 import { AdminDashboard } from '../components/admin/AdminDashboard'
+import { IdVerification } from '../components/admin/IdVerification'
+import { ProviderReviews } from '../components/provider/ProviderReviews'
+import { fetchRealAdminMetrics, type RealAdminMetrics } from '../lib/data/admin'
 import { SearchHeader } from '../components/search/SearchHeader'
 import { SearchResultCard } from '../components/search/SearchResultCard'
 import { FilterSheet } from '../components/search/FilterSheet'
@@ -54,8 +57,6 @@ import {
   type RejectionReason,
   type ModerationVideoItem,
   type ProviderVideoItem,
-  type AdminPlatformMetrics,
-  DEFAULT_ADMIN_METRICS,
 } from '../lib/mockData'
 import {
   fetchCustomerBookings,
@@ -65,11 +66,18 @@ import {
 } from '../lib/data/bookings'
 import type { MarketplaceItem, User, BookingRequest, BookingStatus, SearchFilters, Provider } from '../types/marketplace'
 
+import { type ViewType, getHashForView, getViewFromHash } from '../lib/routes'
+
 export function DiscoverPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [currentView, setCurrentView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'provider-profile' | 'chat' | 'provider-signup' | 'provider-hub' | 'provider-requests' | 'provider-request-details' | 'provider-videos' | 'provider-upload-video' | 'review-video' | 'reject-video' | 'video-moderation' | 'admin-dashboard'>('discover')
+  const [currentView, setCurrentView] = useState<ViewType>(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      return getViewFromHash(window.location.hash)
+    }
+    return 'discover'
+  })
   const [selectedProfileItem, setSelectedProfileItem] = useState<MarketplaceItem | null>(null)
-  const [profileReturnView, setProfileReturnView] = useState<'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat' | 'provider-hub' | 'provider-requests' | 'provider-request-details' | 'provider-videos' | 'provider-upload-video'>('discover')
+  const [profileReturnView, setProfileReturnView] = useState<ViewType>('discover')
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchActive, setIsSearchActive] = useState(false)
   const [searchFilters, setSearchFilters] = useState<SearchFilters>(DEFAULT_SEARCH_FILTERS)
@@ -81,13 +89,18 @@ export function DiscoverPage() {
   })
   const [selectedDetailItem, setSelectedDetailItem] = useState<MarketplaceItem | null>(null)
   const [bookingTargetItem, setBookingTargetItem] = useState<MarketplaceItem | null>(null)
-  const [bookingReturnView, setBookingReturnView] = useState<'video-viewer' | 'provider-profile'>('video-viewer')
-  const [uploadVideoReturnView, setUploadVideoReturnView] = useState<'provider-hub' | 'provider-videos'>('provider-hub')
+  const [bookingReturnView, setBookingReturnView] = useState<ViewType>('video-viewer')
+  const [uploadVideoReturnView, setUploadVideoReturnView] = useState<ViewType>('provider-hub')
   const [reviewVideoTarget, setReviewVideoTarget] = useState<ReviewVideoItem>(DEFAULT_REVIEW_VIDEO_ITEM)
-  const [reviewVideoReturnView, setReviewVideoReturnView] = useState<'provider-hub' | 'provider-videos' | 'video-moderation'>('video-moderation')
-  const [videoModerationReturnView, setVideoModerationReturnView] = useState<'provider-hub' | 'admin-dashboard'>('admin-dashboard')
+  const [reviewVideoReturnView, setReviewVideoReturnView] = useState<ViewType>('video-moderation')
+  const [videoModerationReturnView, setVideoModerationReturnView] = useState<ViewType>('admin-dashboard')
   const [moderationVideos, setModerationVideos] = useState<ModerationVideoItem[]>([])
-  const [adminMetrics] = useState<AdminPlatformMetrics>(DEFAULT_ADMIN_METRICS)
+  const [adminMetrics, setAdminMetrics] = useState<RealAdminMetrics>({
+    totalUsers: 0,
+    verifiedUsers: 0,
+    pendingVideosCount: 0,
+    pendingVerificationsCount: 0,
+  })
   const [bookings, setBookings] = useState<BookingRequest[]>([])
   const [bookingsTab, setBookingsTab] = useState<'All' | 'Pending' | 'Accepted' | 'In Progress' | 'Declined' | 'Canceled' | 'Completed'>('All')
   const [activeChatBooking, setActiveChatBooking] = useState<BookingRequest | null>(null)
@@ -447,6 +460,45 @@ export function DiscoverPage() {
     }
   }, [])
 
+  // Unified Navigation & Native History Management
+  const navigateTo = (view: ViewType, options?: { replace?: boolean }) => {
+    setCurrentView(view)
+    const newHash = getHashForView(view)
+    if (newHash) {
+      if (options?.replace) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search + newHash)
+      } else {
+        window.history.pushState(null, '', window.location.pathname + window.location.search + newHash)
+      }
+    } else {
+      if (options?.replace) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search)
+      } else {
+        window.history.pushState(null, '', window.location.pathname + window.location.search)
+      }
+    }
+  }
+
+  const navigateBack = (fallbackView: ViewType = 'discover') => {
+    if (window.history.length > 1) {
+      window.history.back()
+    } else {
+      navigateTo(fallbackView)
+    }
+  }
+
+  const refreshAdminMetrics = useCallback(() => {
+    if (currentUser?.role === 'admin') {
+      fetchRealAdminMetrics().then(setAdminMetrics).catch(console.warn)
+    }
+  }, [currentUser])
+
+  useEffect(() => {
+    if (currentUser?.role === 'admin') {
+      refreshAdminMetrics()
+    }
+  }, [currentView, currentUser, refreshAdminMetrics])
+
   // Auth triggers
   const handleOpenAuth = (mode: AuthMode = 'login') => {
     setBookingTargetItem(null)
@@ -457,13 +509,14 @@ export function DiscoverPage() {
     setCurrentUser(user)
     setAuthModal({ isOpen: false, mode: 'login' })
     if (bookingTargetItem) {
-      setCurrentView('request-service')
+      navigateTo('request-service')
       showNotification(`Signed in! Complete your request with ${bookingTargetItem.provider.businessName}.`)
     } else if (user.role === 'admin') {
-      setCurrentView('admin-dashboard')
+      refreshAdminMetrics()
+      navigateTo('admin-dashboard')
       showNotification(`Signed in as Administrator. Welcome, ${user.name}!`)
     } else if (user.role === 'provider') {
-      setCurrentView('provider-hub')
+      navigateTo('provider-hub')
       showNotification(`Signed in as Provider. Welcome back, ${user.name}!`)
     } else {
       showNotification(`Welcome back, ${user.name}!`)
@@ -475,11 +528,12 @@ export function DiscoverPage() {
     setCurrentUser(null)
     setBookingTargetItem(null)
     setSelectedDetailItem(null)
-    setCurrentView('discover')
+    setSelectedProfileItem(null)
+    setActiveChatBooking(null)
+    setActiveProviderRequest(null)
+    setIsDrawerOpen(false)
     setIsSearchActive(false)
-    if (window.location.hash) {
-      history.pushState(null, '', window.location.pathname + window.location.search)
-    }
+    navigateTo('discover', { replace: true })
     showNotification('You have been signed out.')
   }
 
@@ -490,12 +544,12 @@ export function DiscoverPage() {
     }
     setSelectedDetailItem(item)
     setBookingTargetItem(item)
-    setCurrentView('video-viewer')
+    navigateTo('video-viewer')
   }
 
   const handleBackFromVideoViewer = () => {
-    setCurrentView('discover')
     setSelectedDetailItem(null)
+    navigateBack('discover')
     if (!isSearchActive) {
       requestAnimationFrame(() => {
         window.scrollTo(0, lastDiscoverScrollY.current)
@@ -510,7 +564,7 @@ export function DiscoverPage() {
     if (!currentUser) {
       setAuthModal({ isOpen: true, mode: 'login' })
     } else {
-      setCurrentView('request-service')
+      navigateTo('request-service')
     }
   }
 
@@ -519,22 +573,22 @@ export function DiscoverPage() {
       if (!selectedProfileItem && bookingTargetItem) {
         setSelectedProfileItem(bookingTargetItem)
       }
-      setCurrentView('provider-profile')
+      navigateBack('provider-profile')
     } else {
-      setCurrentView('video-viewer')
+      navigateBack('video-viewer')
     }
   }
 
   const handleOpenProviderProfile = async (
     item: MarketplaceItem,
-    fromView: 'discover' | 'bookings' | 'video-viewer' | 'request-service' | 'chat' | 'provider-hub' | 'provider-requests' | 'provider-request-details' | 'provider-videos' | 'provider-upload-video'
+    fromView: ViewType
   ) => {
     if (fromView === 'discover' && !isSearchActive) {
       lastDiscoverScrollY.current = window.scrollY
     }
     setProfileReturnView(fromView)
     setSelectedProfileItem(item)
-    setCurrentView('provider-profile')
+    navigateTo('provider-profile')
 
     // Fetch full provider details (services, videos, reviews) from Supabase
     if (item.provider?.id) {
@@ -600,16 +654,12 @@ export function DiscoverPage() {
   }
 
   const handleBackFromProviderProfile = () => {
-    const returnView = profileReturnView
-    setCurrentView(returnView)
     setSelectedProfileItem(null)
-    if (returnView === 'discover' && !isSearchActive) {
+    navigateBack(profileReturnView)
+    if (profileReturnView === 'discover' && !isSearchActive) {
       requestAnimationFrame(() => {
         window.scrollTo(0, lastDiscoverScrollY.current)
       })
-    }
-    if (window.location.hash === '#profile') {
-      history.pushState(null, '', window.location.pathname + window.location.search)
     }
   }
 
@@ -620,7 +670,7 @@ export function DiscoverPage() {
     if (!currentUser) {
       setAuthModal({ isOpen: true, mode: 'login' })
     } else {
-      setCurrentView('request-service')
+      navigateTo('request-service')
     }
   }
 
@@ -638,7 +688,9 @@ export function DiscoverPage() {
         hash === '#video-moderation' ||
         hash === '#moderation' ||
         hash === '#review-video' ||
-        hash === '#reject-video'
+        hash === '#reject-video' ||
+        hash === '#id-verification' ||
+        hash === '#verification'
       ) {
         if (currentUser?.role !== 'admin') {
           showNotification('Access restricted to administrators.')
@@ -650,6 +702,7 @@ export function DiscoverPage() {
         else if (hash === '#video-moderation' || hash === '#moderation') setCurrentView('video-moderation')
         else if (hash === '#review-video') setCurrentView('review-video')
         else if (hash === '#reject-video') setCurrentView('reject-video')
+        else if (hash === '#id-verification' || hash === '#verification') setCurrentView('id-verification')
         return
       }
 
@@ -659,9 +712,13 @@ export function DiscoverPage() {
         hash === '#provider-hub-active' ||
         hash === '#provider-hub-new' ||
         hash === '#client-requests' ||
+        hash === '#provider-requests' ||
         hash.startsWith('#request-details-') ||
+        hash === '#request-details' ||
         hash === '#provider-videos' ||
-        hash === '#provider-upload-video'
+        hash === '#provider-upload-video' ||
+        hash === '#customer-reviews' ||
+        hash === '#reviews'
       ) {
         if (currentUser?.role !== 'provider' && currentUser?.role !== 'admin') {
           showNotification('Please sign in as a service provider to access Provider Hub.')
@@ -676,12 +733,14 @@ export function DiscoverPage() {
           hash === '#provider-hub-new'
         ) {
           setCurrentView('provider-hub')
-        } else if (hash === '#client-requests') {
+        } else if (hash === '#client-requests' || hash === '#provider-requests') {
           setCurrentView('provider-requests')
         } else if (hash === '#provider-videos') {
           setCurrentView('provider-videos')
         } else if (hash === '#provider-upload-video') {
           setCurrentView('provider-upload-video')
+        } else if (hash === '#customer-reviews' || hash === '#reviews') {
+          setCurrentView('customer-reviews')
         } else if (hash === '#request-details-pending') {
           const req = providerRequestsRef.current.find((r) => r.status === 'pending') || providerRequestsRef.current[0] || null
           if (req) setActiveProviderRequest(req)
@@ -697,6 +756,8 @@ export function DiscoverPage() {
         } else if (hash === '#request-details-declined') {
           const req = providerRequestsRef.current.find((r) => r.status === 'declined') || providerRequestsRef.current[0] || null
           if (req) setActiveProviderRequest(req)
+          setCurrentView('provider-request-details')
+        } else if (hash === '#request-details') {
           setCurrentView('provider-request-details')
         }
         return
@@ -732,20 +793,23 @@ export function DiscoverPage() {
         setCurrentView('chat')
       } else if (hash === '#provider-signup') {
         setCurrentView('provider-signup')
+      } else if (!hash || hash === '#discover') {
+        setCurrentView('discover')
       }
     }
 
     checkHash()
     window.addEventListener('hashchange', checkHash)
-    return () => window.removeEventListener('hashchange', checkHash)
+    window.addEventListener('popstate', checkHash)
+    return () => {
+      window.removeEventListener('hashchange', checkHash)
+      window.removeEventListener('popstate', checkHash)
+    }
   }, [currentUser, isAuthLoading, marketplaceItems])
 
   // Admin Review Video Action Handlers
   const handleBackFromReviewVideo = () => {
-    setCurrentView(reviewVideoReturnView)
-    if (window.location.hash === '#review-video') {
-      history.pushState(null, '', window.location.pathname + window.location.search)
-    }
+    navigateBack(reviewVideoReturnView)
   }
 
   const handleApproveVideo = async (item: ReviewVideoItem) => {
@@ -759,6 +823,7 @@ export function DiscoverPage() {
         v.id === item.id || v.title === item.serviceName ? { ...v, status: 'approved' } : v
       )
     )
+    refreshAdminMetrics()
     fetchDiscoverMarketplaceItems().then(setMarketplaceItems).catch(console.warn)
     showNotification(`Video for "${item.serviceName}" has been approved!`)
     handleBackFromReviewVideo()
@@ -766,21 +831,15 @@ export function DiscoverPage() {
 
   const handleRejectVideo = (item: ReviewVideoItem) => {
     setReviewVideoTarget(item)
-    setCurrentView('reject-video')
+    navigateTo('reject-video')
   }
 
   const handleBackFromRejectVideo = () => {
-    setCurrentView('review-video')
-    if (window.location.hash === '#reject-video') {
-      window.location.hash = '#review-video'
-    }
+    navigateBack('review-video')
   }
 
   const handleCancelRejectVideo = () => {
-    setCurrentView('review-video')
-    if (window.location.hash === '#reject-video') {
-      window.location.hash = '#review-video'
-    }
+    navigateBack('review-video')
   }
 
   const handleConfirmRejectVideo = async (item: ReviewVideoItem, reason: RejectionReason) => {
@@ -794,11 +853,9 @@ export function DiscoverPage() {
         v.id === item.id || v.title === item.serviceName ? { ...v, status: 'rejected' } : v
       )
     )
+    refreshAdminMetrics()
     showNotification(`Video for "${item.serviceName}" has been rejected (${reason}).`)
-    setCurrentView(reviewVideoReturnView)
-    if (window.location.hash === '#reject-video' || window.location.hash === '#review-video') {
-      history.pushState(null, '', window.location.pathname + window.location.search)
-    }
+    navigateBack(reviewVideoReturnView)
   }
 
   const handleOpenReviewVideoFromModeration = (video: ModerationVideoItem) => {
@@ -806,26 +863,27 @@ export function DiscoverPage() {
       id: video.id,
       providerName: video.providerName,
       serviceName: video.title,
+      storagePath: video.storagePath,
     })
     setReviewVideoReturnView('video-moderation')
-    setCurrentView('review-video')
+    navigateTo('review-video')
   }
 
   // Admin Dashboard Action Handlers
   const handleNavigateReviewVideosFromDashboard = () => {
     setVideoModerationReturnView('admin-dashboard')
-    setCurrentView('video-moderation')
+    navigateTo('video-moderation')
   }
 
   const handleReviewIdFromDashboard = () => {
-    showNotification('ID Verification review will be available in the next update.')
+    navigateTo('id-verification')
   }
 
   const handleBookingSubmit = (newBooking: BookingRequest) => {
     setBookings((prev) => [newBooking, ...prev.filter((b) => b.id !== newBooking.id)])
     setBookingTargetItem(null)
     setSelectedDetailItem(null)
-    setCurrentView('bookings')
+    navigateTo('bookings')
     showNotification(
       `Service request sent to ${newBooking.provider.businessName}! Status: Pending.`
     )
@@ -833,15 +891,12 @@ export function DiscoverPage() {
 
   const handleOpenChat = (booking: BookingRequest) => {
     setActiveChatBooking(booking)
-    setCurrentView('chat')
+    navigateTo('chat')
   }
 
   const handleBackFromChat = () => {
     setActiveChatBooking(null)
-    setCurrentView('bookings')
-    if (window.location.hash.startsWith('#chat')) {
-      history.pushState(null, '', window.location.pathname + window.location.search)
-    }
+    navigateBack('bookings')
   }
 
   const handleSendMessageInChat = async (
@@ -946,15 +1001,15 @@ export function DiscoverPage() {
   const handleNavigateHome = () => {
     setSelectedDetailItem(null)
     setBookingTargetItem(null)
-    setCurrentView('discover')
     setIsSearchActive(false)
+    navigateTo('discover')
   }
 
   const handleNavigateSearch = () => {
     setSelectedDetailItem(null)
     setBookingTargetItem(null)
-    setCurrentView('discover')
     setIsSearchActive(true)
+    navigateTo('discover')
     setTimeout(() => {
       const searchEl = document.getElementById('search-activity-input')
       if (searchEl) {
@@ -966,13 +1021,13 @@ export function DiscoverPage() {
   const handleNavigateBookings = () => {
     setSelectedDetailItem(null)
     setBookingTargetItem(null)
-    setCurrentView('bookings')
+    navigateTo('bookings')
   }
 
   const handleNavigateProviderHub = () => {
     setSelectedDetailItem(null)
     setBookingTargetItem(null)
-    setCurrentView('provider-hub')
+    navigateTo('provider-hub')
   }
 
   // Provider Request Action Handlers
@@ -1150,17 +1205,17 @@ export function DiscoverPage() {
             onMenuClick={() => setIsDrawerOpen(true)}
             onUploadVideo={() => {
               setUploadVideoReturnView('provider-hub')
-              setCurrentView('provider-upload-video')
+              navigateTo('provider-upload-video')
             }}
             onViewRequests={() => {
-              setCurrentView('provider-requests')
+              navigateTo('provider-requests')
             }}
             onManageVideos={() => {
-              setCurrentView('provider-videos')
+              navigateTo('provider-videos')
             }}
-            onCustomerReviews={() =>
-              showNotification('Customer reviews will be available in the next update.')
-            }
+            onCustomerReviews={() => {
+              navigateTo('customer-reviews')
+            }}
             onViewProfile={async () => {
               if (currentUser) {
                 const fullProvider = await fetchProviderDetails(currentUser.id)
@@ -1182,14 +1237,14 @@ export function DiscoverPage() {
                     rating: 0,
                   })
                   setProfileReturnView('provider-hub')
-                  setCurrentView('provider-profile')
+                  navigateTo('provider-profile')
                   return
                 }
               }
               if (marketplaceItems.length > 0) {
                 setSelectedProfileItem(marketplaceItems[0])
                 setProfileReturnView('provider-hub')
-                setCurrentView('provider-profile')
+                navigateTo('provider-profile')
               } else {
                 showNotification('No provider profile found.')
               }
@@ -1198,16 +1253,16 @@ export function DiscoverPage() {
         ) : currentView === 'provider-videos' ? (
           <ProviderVideos
             videos={providerVideosList}
-            onBack={() => setCurrentView('provider-hub')}
+            onBack={() => navigateBack('provider-hub')}
             onMenuClick={() => setIsDrawerOpen(true)}
             onUploadVideo={() => {
               setUploadVideoReturnView('provider-videos')
-              setCurrentView('provider-upload-video')
+              navigateTo('provider-upload-video')
             }}
           />
         ) : currentView === 'provider-upload-video' ? (
           <ProviderUploadVideo
-            onBack={() => setCurrentView(uploadVideoReturnView)}
+            onBack={() => navigateBack(uploadVideoReturnView)}
             onMenuClick={() => setIsDrawerOpen(true)}
             onSubmitSuccess={() => {
               if (currentUser) {
@@ -1215,7 +1270,7 @@ export function DiscoverPage() {
                   .then(setProviderVideosList)
                   .catch(console.warn)
               }
-              setCurrentView('provider-videos')
+              navigateTo('provider-videos')
               showNotification('Video uploaded successfully and submitted for review!')
             }}
           />
@@ -1236,16 +1291,7 @@ export function DiscoverPage() {
         ) : currentView === 'video-moderation' ? (
           <VideoModeration
             videos={moderationVideos}
-            onBack={() => {
-              setCurrentView(videoModerationReturnView)
-              if (window.location.hash === '#video-moderation' || window.location.hash === '#moderation') {
-                if (videoModerationReturnView === 'admin-dashboard') {
-                  window.location.hash = '#admin-dashboard'
-                } else {
-                  history.pushState(null, '', window.location.pathname + window.location.search)
-                }
-              }
-            }}
+            onBack={() => navigateBack(videoModerationReturnView)}
             onMenuClick={() => setIsDrawerOpen(true)}
             onReviewVideo={handleOpenReviewVideoFromModeration}
           />
@@ -1256,11 +1302,26 @@ export function DiscoverPage() {
             onReviewVideos={handleNavigateReviewVideosFromDashboard}
             onReviewId={handleReviewIdFromDashboard}
           />
+        ) : currentView === 'id-verification' ? (
+          <IdVerification
+            onBack={() => navigateBack('admin-dashboard')}
+            onMenuClick={() => setIsDrawerOpen(true)}
+            onStatusChange={() => {
+              refreshAdminMetrics()
+            }}
+          />
+        ) : currentView === 'customer-reviews' ? (
+          <ProviderReviews
+            providerId={currentUser?.id}
+            providerName={currentUser?.name}
+            onBack={() => navigateBack('provider-hub')}
+            onMenuClick={() => setIsDrawerOpen(true)}
+          />
         ) : currentView === 'provider-requests' ? (
           <ProviderRequests
             requests={providerRequests}
             isLoading={isProviderRequestsLoading}
-            onBack={() => setCurrentView('provider-hub')}
+            onBack={() => navigateBack('provider-hub')}
             onMenuClick={() => setIsDrawerOpen(true)}
             onOpenDetails={handleOpenProviderRequestDetails}
             onAcceptRequest={handleAcceptProviderRequest}
@@ -1275,7 +1336,7 @@ export function DiscoverPage() {
             request={activeProviderRequest}
             onBack={() => {
               setActiveProviderRequest(null)
-              setCurrentView('provider-requests')
+              navigateBack('provider-requests')
             }}
             onAccept={handleAcceptProviderRequest}
             onDecline={handleDeclineProviderRequest}
@@ -1291,11 +1352,8 @@ export function DiscoverPage() {
             activeTab={bookingsTab}
             onTabChange={setBookingsTab}
             onBackToDiscover={() => {
-              setCurrentView('discover')
               setIsSearchActive(false)
-              if (window.location.hash === '#bookings') {
-                history.pushState(null, '', window.location.pathname + window.location.search)
-              }
+              navigateBack('discover')
             }}
             onProviderClick={handleProviderClickFromBookings}
             onMenuClick={() => setIsDrawerOpen(true)}
@@ -1411,12 +1469,19 @@ export function DiscoverPage() {
         <NavDrawer
           isOpen={isDrawerOpen}
           onClose={() => setIsDrawerOpen(false)}
+          user={currentUser}
+          onSignIn={() => {
+            setIsDrawerOpen(false)
+            setAuthModal({ isOpen: true, mode: 'login' })
+          }}
           onNavigateHome={handleNavigateHome}
           onNavigateSearch={handleNavigateSearch}
           onNavigateBookings={handleNavigateBookings}
           onNavigateProviderHub={handleNavigateProviderHub}
-          onNavigateVideoModeration={() => setCurrentView('video-moderation')}
-          onNavigateAdminDashboard={() => setCurrentView('admin-dashboard')}
+          onNavigateVideoModeration={() => navigateTo('video-moderation')}
+          onNavigateAdminDashboard={() => navigateTo('admin-dashboard')}
+          onNavigateIdVerification={() => navigateTo('id-verification')}
+          onNavigateProviderSignup={() => navigateTo('provider-signup')}
           onSignOut={handleSignOut}
           isProvider={currentUser?.role === 'provider' || currentUser?.role === 'admin'}
           isAdmin={currentUser?.role === 'admin'}

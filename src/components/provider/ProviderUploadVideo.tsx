@@ -192,6 +192,7 @@ export function ProviderUploadVideo({
                   <video
                     src={videoPreviewUrl}
                     controls
+                    preload="metadata"
                     className="provider-upload-video-preview"
                     playsInline
                   />
